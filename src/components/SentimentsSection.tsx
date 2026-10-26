@@ -88,7 +88,7 @@ export default function SentimentsSection() {
     SENTIMENTS.find((s) => s.id === activeSentiment) || SENTIMENTS[0];
 
   return (
-    <section id="sentiments" className="relative py-16 sm:py-24 bg-[#fce3e0] overflow-hidden">
+    <section className="relative py-16 sm:py-24 bg-[#fce3e0] overflow-hidden">
       {/* Scattered rose petals, hearts & gold dots motif */}
       <Decor />
       
@@ -101,7 +101,7 @@ export default function SentimentsSection() {
           </StickerBadge>
         </div>
 
-        <h2 className="font-display font-black text-[clamp(44px,5.8vw,88px)] text-rose leading-[1.02] tracking-tight drop-shadow-[0_2px_4px_rgba(226,64,92,0.1)]">
+        <h2 className="font-display font-black text-[clamp(30px,7.8vw,44px)] sm:text-[clamp(44px,5.8vw,88px)] text-rose leading-[1.02] tracking-tight drop-shadow-[0_2px_4px_rgba(226,64,92,0.1)] px-2">
           <span className="block">GIFTS BY</span>
           <span className="block">SENTIMENTS</span>
         </h2>

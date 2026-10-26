@@ -129,7 +129,6 @@ export default function GiftsOfTheMonth() {
 
   return (
     <section
-      id="gifts-of-the-month"
       className="relative w-full bg-[#fce3e0] pt-6 sm:pt-10 pb-28 sm:pb-36 lg:pb-44 overflow-x-clip z-10"
     >
       {/* ── Scattered Decorative Elements (Petals, Hearts, Dots) ── */}
@@ -137,7 +136,7 @@ export default function GiftsOfTheMonth() {
 
       {/* ── Centered Heading: GIFTS OF / THE MONTH ── */}
       <div className="relative z-20 text-center max-w-4xl mx-auto px-4 mb-10 sm:mb-14 md:mb-16">
-        <h2 className="font-display font-black text-[clamp(44px,5.8vw,88px)] text-rose leading-[1.02] tracking-tight drop-shadow-[0_2px_4px_rgba(226,64,92,0.1)]">
+        <h2 className="font-display font-black text-[clamp(30px,7.8vw,44px)] sm:text-[clamp(44px,5.8vw,88px)] text-rose leading-[1.02] tracking-tight drop-shadow-[0_2px_4px_rgba(226,64,92,0.1)] px-2">
           <span className="block">GIFTS OF</span>
           <span className="block">THE MONTH</span>
         </h2>

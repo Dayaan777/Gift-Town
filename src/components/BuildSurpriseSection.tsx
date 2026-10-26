@@ -271,11 +271,20 @@ export default function BuildSurpriseSection() {
   const [baskets, setBaskets] = useState<BasketOption[]>(BASKETS);
   const [treats, setTreats] = useState<TreatItem[]>(TREATS);
   const [selectedBasketId, setSelectedBasketId] = useState<string>("wicker-handle");
-  const [packedItemIds, setPackedItemIds] = useState<string[]>([
-    "snickers-bar",
-    "dairy-milk-tall",
-    "kitkat-chunky",
-  ]);
+  const [quantities, setQuantities] = useState<Record<string, number>>({
+    "snickers-bar": 1,
+    "dairy-milk-tall": 1,
+    "kitkat-chunky": 1,
+  });
+
+  // Derived list of packed item IDs (items with quantity > 0)
+  const packedItemIds = Object.keys(quantities).filter(
+    (id) => (quantities[id] || 0) > 0
+  );
+  const totalPackedCount = Object.values(quantities).reduce(
+    (acc, q) => acc + q,
+    0
+  );
 
   // Fly-to-basket animation state
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
@@ -284,7 +293,7 @@ export default function BuildSurpriseSection() {
 
   // References to the basket stage container and shelf buttons
   const stageStackRef = useRef<HTMLDivElement>(null);
-  const shelfButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const shelfButtonRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Sync baskets and treats dynamically with live Supabase database
   useEffect(() => {
@@ -377,20 +386,26 @@ export default function BuildSurpriseSection() {
     }
     syncPrices();
 
-    // Realtime subscription for Hamper items
-    const channel = supabase
-      .channel("realtime-hamper-items")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "hamper_items" },
-        () => {
-          syncPrices();
-        }
-      )
-      .subscribe();
+    // Realtime subscription for Hamper items deferred slightly so interaction remains silky smooth
+    let channel: any = null;
+    const subTimer = setTimeout(() => {
+      channel = supabase
+        .channel("realtime-hamper-items")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "hamper_items" },
+          () => {
+            syncPrices();
+          }
+        )
+        .subscribe();
+    }, 1200);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearTimeout(subTimer);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
@@ -436,8 +451,11 @@ export default function BuildSurpriseSection() {
 
     // 3. After parabolic flight finishes (650ms), nestle treat, bump basket, and trigger sparkles
     setTimeout(() => {
-      // Add to packed items
-      setPackedItemIds((prev) => (prev.includes(treat.id) ? prev : [...prev, treat.id]));
+      // Add or increment treat quantity (capped at 10)
+      setQuantities((prev) => ({
+        ...prev,
+        [treat.id]: Math.min(10, (prev[treat.id] || 0) + 1),
+      }));
       // Remove fly clone
       setFlyingItems((prev) => prev.filter((f) => f.id !== flyId));
       // Basket landing jiggle / micro-bump
@@ -461,34 +479,48 @@ export default function BuildSurpriseSection() {
     }, 650);
   };
 
-  const toggleItem = (itemId: string, event?: React.MouseEvent<HTMLButtonElement>) => {
-    const isCurrentlyPacked = packedItemIds.includes(itemId);
+  const incrementItem = (itemId: string, event?: React.MouseEvent) => {
+    const currentQty = quantities[itemId] || 0;
+    if (currentQty >= 10) return; // Cap at 10 items
 
-    if (isCurrentlyPacked) {
-      // Removal: immediate smooth un-nestle
-      setPackedItemIds((prev) => prev.filter((id) => id !== itemId));
-    } else {
-      // Addition: trigger Parabolic Fly-to-Basket
+    if (currentQty === 0) {
       const treat = treats.find((t) => t.id === itemId);
-      const btn = event?.currentTarget || shelfButtonRefs.current[itemId];
+      const btn = (event?.currentTarget as HTMLElement) || shelfButtonRefs.current[itemId];
       if (treat && btn && stageStackRef.current) {
         triggerFlyToBasket(treat, btn);
       } else {
-        setPackedItemIds((prev) => [...prev, itemId]);
+        setQuantities((prev) => ({ ...prev, [itemId]: 1 }));
       }
+    } else {
+      setQuantities((prev) => ({ ...prev, [itemId]: currentQty + 1 }));
+      setBasketBump(true);
+      setTimeout(() => setBasketBump(false), 250);
+    }
+  };
+
+  const decrementItem = (itemId: string) => {
+    const currentQty = quantities[itemId] || 0;
+    if (currentQty <= 1) {
+      setQuantities((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+    } else {
+      setQuantities((prev) => ({ ...prev, [itemId]: currentQty - 1 }));
     }
   };
 
   const handleReset = () => {
-    setPackedItemIds([]);
+    setQuantities({});
   };
 
-  // Pricing math
+  // Pricing math (base basket + sum of (treat.price * quantity))
   const itemsTotal = isCakeBasket
     ? 0
-    : packedItemIds.reduce((sum, id) => {
+    : Object.entries(quantities).reduce((sum, [id, qty]) => {
         const item = treats.find((t) => t.id === id);
-        return sum + (item?.price || 0);
+        return sum + (item?.price || 0) * qty;
       }, 0);
 
   const grandTotal = activeBasket.basePrice + itemsTotal;
@@ -515,8 +547,12 @@ export default function BuildSurpriseSection() {
     const lines = [
       "Hi Gift Town! I designed a custom gift hamper on your Live Hamper Studio:",
       `🧺 Basket Base: ${activeBasket.name} (PKR ${activeBasket.basePrice.toLocaleString()})`,
-      `🍫 Packed Items (${packedTreats.length}):`,
-      ...packedTreats.map((item, idx) => `  ${idx + 1}. ${item.name} - PKR ${item.price}`),
+      `🍫 Packed Items (${totalPackedCount} items):`,
+      ...packedTreats.map((item, idx) => {
+        const qty = quantities[item.id] || 1;
+        const lineTotal = item.price * qty;
+        return `  ${idx + 1}. ${item.name} (x${qty}) - PKR ${lineTotal.toLocaleString()}`;
+      }),
       `💰 Total Estimated Price: PKR ${grandTotal.toLocaleString()}`,
       "Please confirm item availability and delivery timing in Thatta/Makli!",
     ];
@@ -525,7 +561,6 @@ export default function BuildSurpriseSection() {
 
   return (
     <section
-      id="build-surprise"
       className="relative pt-12 sm:pt-16 pb-20 sm:pb-28 bg-transparent z-10"
     >
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-20">
@@ -559,7 +594,7 @@ export default function BuildSurpriseSection() {
               <span className="text-xs font-bold uppercase tracking-wider text-maroon/70">
                 1. Select Basket Base:
               </span>
-              {!isCakeBasket && packedItemIds.length > 0 && (
+              {!isCakeBasket && totalPackedCount > 0 && (
                 <button
                   onClick={handleReset}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose hover:text-[#b22d44] transition-colors cursor-pointer"
@@ -621,17 +656,17 @@ export default function BuildSurpriseSection() {
                   ) : (
                     <>
                       <ShoppingBag className="w-3.5 h-3.5 text-rose" />
-                      <span>{packedTreats.length} Treats Inside</span>
+                      <span>{totalPackedCount} {totalPackedCount === 1 ? "Treat" : "Treats"} Inside</span>
                     </>
                   )}
                 </div>
               </div>
 
               {/* Interactive Help Hint in Top-Right */}
-              {!isCakeBasket && (
+              {!isCakeBasket && totalPackedCount > 0 && (
                 <div className="absolute top-4 right-4 z-30 hidden sm:block">
                   <span className="text-[10px] font-semibold text-maroon/60 bg-white/80 px-2.5 py-1 rounded-full border border-rose/15">
-                    Tap treat to remove ✕
+                    Tap ✕ to remove item
                   </span>
                 </div>
               )}
@@ -681,12 +716,12 @@ export default function BuildSurpriseSection() {
                     const hasBackRowItemInWicker =
                       selectedBasketId === "wicker-handle" &&
                       ["snickers-bar", "dairy-milk-tall", "kitkat-chunky"].some(
-                        (backId) => packedItemIds.includes(backId)
+                        (backId) => (quantities[backId] || 0) > 0
                       );
 
                     return TREATS.map((treat) => {
-                      const isPacked = packedItemIds.includes(treat.id);
-                      if (!isPacked) return null;
+                      const qty = quantities[treat.id] || 0;
+                      if (qty <= 0) return null;
 
                       // Get slot for active basket (wicker-handle or oval-trough)
                       const basketSlotKey =
@@ -721,11 +756,9 @@ export default function BuildSurpriseSection() {
                       }
 
                       return (
-                        <button
+                        <div
                           key={treat.id}
-                          onClick={() => toggleItem(treat.id)}
-                          title={`Remove ${treat.name}`}
-                          className="absolute transition-all duration-500 ease-out cursor-pointer group hover:scale-110 active:scale-95"
+                          className="absolute transition-all duration-500 ease-out group"
                           style={{
                             left: slot.left,
                             top: topPos,
@@ -743,12 +776,26 @@ export default function BuildSurpriseSection() {
                               sizes="140px"
                               className="object-contain"
                             />
-                            {/* Hover remove pill */}
-                            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose text-white text-xs font-black flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                            {/* Quantity badge if > 1 */}
+                            {qty > 1 && (
+                              <span className="absolute -top-1.5 -left-1.5 bg-rose text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full shadow-md border-2 border-white pointer-events-none z-20">
+                                x{qty}
+                              </span>
+                            )}
+                            {/* Hover remove/decrement button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                decrementItem(treat.id);
+                              }}
+                              title={`Remove 1 ${treat.name}`}
+                              className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rose text-white text-xs font-black flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-[#b22d44] z-20 active:scale-90"
+                            >
                               ✕
-                            </span>
+                            </button>
                           </div>
-                        </button>
+                        </div>
                       );
                     });
                   })()}
@@ -773,7 +820,7 @@ export default function BuildSurpriseSection() {
                 )}
 
                 {/* Empty State Prompt if no items packed (for treats baskets) */}
-                {!isCakeBasket && packedTreats.length === 0 && (
+                {!isCakeBasket && totalPackedCount === 0 && (
                   <div className="absolute z-20 text-center bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-rose/30 shadow-sm animate-pulse">
                     <p className="font-body font-bold text-xs text-maroon">
                       Basket is Empty
@@ -809,32 +856,37 @@ export default function BuildSurpriseSection() {
                       2. Choose Your Treats
                     </h3>
                     <p className="text-[11px] text-maroon/60">
-                      Tap to pack inside or remove from basket
+                      Tap + or - to customize quantities (up to 10 each)
                     </p>
                   </div>
                   <span className="text-[11px] font-bold text-rose bg-rose/10 px-2.5 py-0.5 rounded-full">
-                    {packedTreats.length}/{TREATS.length} Packed
+                    {totalPackedCount} Item{totalPackedCount !== 1 ? "s" : ""} Packed
                   </span>
                 </div>
 
                 {/* 2-Column Grid of Treats */}
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                   {treats.map((treat) => {
-                    const isPacked = packedItemIds.includes(treat.id);
+                    const qty = quantities[treat.id] || 0;
+                    const isPacked = qty > 0;
                     return (
-                      <button
+                      <div
                         key={treat.id}
                         ref={(el) => {
                           shelfButtonRefs.current[treat.id] = el;
                         }}
-                        onClick={(e) => toggleItem(treat.id, e)}
-                        className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group active:scale-97 ${
+                        onClick={(e) => {
+                          if (qty === 0) {
+                            incrementItem(treat.id, e);
+                          }
+                        }}
+                        className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between group ${
                           isPacked
                             ? "border-rose bg-[#fdf2f4] shadow-sm"
-                            : "border-rose/15 bg-white hover:border-rose/40 hover:bg-[#fff9fa]"
+                            : "border-rose/15 bg-white hover:border-rose/40 hover:bg-[#fff9fa] cursor-pointer"
                         }`}
                       >
-                        {/* Thumbnail & Toggle Badge */}
+                        {/* Thumbnail & Stepper / Add Badge */}
                         <div className="flex items-start justify-between mb-2">
                           <div className="relative w-12 h-16 sm:w-14 sm:h-18 rounded-lg overflow-hidden flex items-center justify-center">
                             <div
@@ -855,30 +907,86 @@ export default function BuildSurpriseSection() {
                               />
                             </div>
                           </div>
-                          <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${
-                              isPacked
-                                ? "bg-rose text-white shadow-xs"
-                                : "bg-rose/10 text-rose group-hover:bg-rose group-hover:text-white"
-                            }`}
-                          >
-                            {isPacked ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                          </span>
+
+                          {/* Stepper or Add Button */}
+                          {isPacked ? (
+                            <div
+                              className="inline-flex items-center gap-1 bg-white border border-rose/30 rounded-full p-0.5 shadow-2xs select-none"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  decrementItem(treat.id);
+                                }}
+                                title="Decrease quantity"
+                                className="w-5 h-5 rounded-full bg-rose/10 text-rose hover:bg-rose hover:text-white flex items-center justify-center transition-colors cursor-pointer active:scale-90"
+                              >
+                                <Minus className="w-2.5 h-2.5" />
+                              </button>
+                              <span className="text-xs font-black text-maroon px-1 min-w-[14px] text-center">
+                                {qty}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={qty >= 10}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  incrementItem(treat.id, e);
+                                }}
+                                title={qty >= 10 ? "Maximum 10 items limit" : "Increase quantity"}
+                                className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors text-xs font-bold ${
+                                  qty >= 10
+                                    ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                                    : "bg-rose text-white hover:bg-[#b22d44] cursor-pointer active:scale-90"
+                                }`}
+                              >
+                                <Plus className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                incrementItem(treat.id, e);
+                              }}
+                              title="Add to basket"
+                              className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-colors bg-rose/10 text-rose group-hover:bg-rose group-hover:text-white shadow-2xs cursor-pointer active:scale-90"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
 
                         {/* Info */}
                         <div>
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-rose block">
-                            {treat.category}
-                          </span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-rose block">
+                              {treat.category}
+                            </span>
+                            {qty >= 10 && (
+                              <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1 py-0.2 rounded">
+                                Limit 10
+                              </span>
+                            )}
+                          </div>
                           <h4 className="font-body font-bold text-xs text-maroon leading-snug line-clamp-2">
                             {treat.name}
                           </h4>
-                          <span className="font-body font-black text-xs text-maroon block mt-1">
-                            +PKR {treat.price.toLocaleString()}
-                          </span>
+                          <div className="flex items-baseline justify-between mt-1">
+                            <span className="font-body font-black text-xs text-maroon">
+                              PKR {treat.price.toLocaleString()}
+                            </span>
+                            {qty > 1 && (
+                              <span className="text-[10px] font-bold text-rose">
+                                Total: PKR {(treat.price * qty).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -929,21 +1037,30 @@ export default function BuildSurpriseSection() {
                 {!isCakeBasket ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <span>Selected Treats ({packedTreats.length} items)</span>
+                      <span>Selected Treats ({totalPackedCount} items)</span>
                       <span className="font-bold text-maroon">
                         +PKR {itemsTotal.toLocaleString()}
                       </span>
                     </div>
                     {packedTreats.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {packedTreats.map((t) => (
-                          <span
-                            key={t.id}
-                            className="text-[10px] bg-white border border-rose/15 px-2 py-0.5 rounded-md text-maroon font-medium"
-                          >
-                            {t.name.split(" ")[0]} {t.name.split(" ")[1]}
-                          </span>
-                        ))}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {packedTreats.map((t) => {
+                          const qty = quantities[t.id] || 1;
+                          return (
+                            <span
+                              key={t.id}
+                              className="inline-flex items-center gap-1.5 text-[11px] bg-white border border-rose/20 px-2.5 py-1 rounded-lg text-maroon font-medium shadow-2xs"
+                            >
+                              <span>{t.name}</span>
+                              <span className="font-bold text-rose bg-rose/10 px-1.5 py-0.2 rounded">
+                                x{qty}
+                              </span>
+                              <span className="text-maroon/60 text-[10px]">
+                                (PKR {(t.price * qty).toLocaleString()})
+                              </span>
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
                   </>

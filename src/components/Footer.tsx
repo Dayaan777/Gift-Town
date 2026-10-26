@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import StickerBadge from "@/components/StickerBadge";
-import { Sparkles, MessageCircle, MapPin, Heart, Camera, Phone } from "lucide-react";
+import { Sparkles, MessageCircle, MapPin, Camera, Phone } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -32,15 +32,15 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Quick Links to Page Sections */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="font-serif font-bold text-neutral-900 text-lg">Specialties</h4>
+            <h4 className="font-serif font-bold text-neutral-900 text-lg">Explore Sections</h4>
             <ul className="space-y-2 text-sm text-neutral-600">
-              <li><Link href="#specialties" className="hover:text-[#7a233c] transition-colors">Fresh Flower Bouquets</Link></li>
-              <li><Link href="#specialties" className="hover:text-[#7a233c] transition-colors">Luxury Money Bouquets</Link></li>
-              <li><Link href="#specialties" className="hover:text-[#7a233c] transition-colors">Custom Gift Hampers</Link></li>
-              <li><Link href="#specialties" className="hover:text-[#7a233c] transition-colors">Chocolate & Confectionery</Link></li>
-              <li><Link href="#midnight" className="hover:text-[#7a233c] transition-colors">Midnight 12:00 AM Surprises</Link></li>
+              <li><Link href="#gifts-of-the-month" className="hover:text-[#7a233c] transition-colors">Gifts of the Month</Link></li>
+              <li><Link href="#sentiments" className="hover:text-[#7a233c] transition-colors">Gifts by Sentiments</Link></li>
+              <li><Link href="#build-surprise" className="hover:text-[#7a233c] transition-colors">Custom Gift Hampers</Link></li>
+              <li><Link href="#packages" className="hover:text-[#7a233c] transition-colors">Best Sellers</Link></li>
+              <li><Link href="#featured-products" className="hover:text-[#7a233c] transition-colors">All Products</Link></li>
             </ul>
           </div>
 
@@ -83,13 +83,8 @@ export default function Footer() {
         </div>
 
         {/* Bottom Copyright */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-3">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center text-xs text-neutral-500 gap-3">
           <p>© 2026 Gift Town. All rights reserved.</p>
-          <p className="flex items-center gap-1">
-            <span>Crafted with</span>
-            <Heart className="w-3.5 h-3.5 fill-[#d46f83] text-[#d46f83]" />
-            <span>in Thatta / Makli, Sindh</span>
-          </p>
         </div>
       </div>
     </footer>

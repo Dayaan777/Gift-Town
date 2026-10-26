@@ -86,21 +86,13 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Main Sticky Navbar */}
+      {/* Main Sticky Navbar (Floating overlay over hero when at top, sticky glass when scrolled) */}
       <header
         className={`sticky top-0 z-50 transition-all duration-300 ${
           isScrolled
             ? "bg-[#fce3e0]/95 backdrop-blur-md shadow-md border-b border-[#f4c6c2]"
-            : "border-b border-[#f4c6c2]/30"
+            : "bg-transparent border-b border-transparent"
         }`}
-        style={
-          !isScrolled
-            ? {
-                background:
-                  "linear-gradient(90deg, #fce3e0 0%, #f9d5d1 50%, #e8a7a4 100%)",
-              }
-            : undefined
-        }
       >
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-[4.75rem] flex items-center justify-between">
           {/* Mobile hamburger button */}
@@ -256,16 +248,6 @@ export default function Navbar() {
               <span>Bestsellers</span>
               <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#d46f83] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
             </Link>
-
-            {/* 3. ALL PRODUCTS (Separate direct link to #featured-products) */}
-            <Link
-              href="#featured-products"
-              className="text-[14px] lg:text-[15px] font-semibold text-neutral-800 hover:text-[#7a233c] transition-colors relative group py-1 flex items-center gap-1.5"
-            >
-              <PackageOpen className="w-4 h-4 text-rose" />
-              <span>All Products</span>
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#d46f83] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
-            </Link>
           </div>
 
           {/* Center Brand Logo */}
@@ -285,36 +267,54 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Right Navigation: Create your Own Basket & Book Surprise */}
+          {/* Right Navigation: All Products & Custom Basket CTA */}
           <div className="hidden md:flex items-center space-x-5 lg:space-x-6 flex-1 justify-end">
-            {/* "Create your Own Basket" (Renamed from Hamper Studio) */}
+            {/* All Products (Moved to right side) */}
             <Link
-              href="#build-surprise"
+              href="#featured-products"
               className="text-[14px] lg:text-[15px] font-semibold text-neutral-800 hover:text-[#7a233c] transition-colors relative group py-1 flex items-center gap-1.5"
             >
-              <ShoppingBag className="w-4 h-4 text-rose" />
-              <span>Create your Own Basket</span>
+              <PackageOpen className="w-4 h-4 text-rose" />
+              <span>All Products</span>
               <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#d46f83] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
             </Link>
 
-            {/* Book Surprise Primary Button */}
+            {/* Custom Basket Button with uploaded basket image */}
             <Link
               href="#build-surprise"
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#e7889b] to-[#d46f83] hover:from-[#df778c] hover:to-[#c75e72] text-white text-[13px] lg:text-[14px] font-semibold px-4 lg:px-5 py-2 rounded-full shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#e7889b] to-[#d46f83] hover:from-[#df778c] hover:to-[#c75e72] text-white text-[13px] lg:text-[14px] font-bold pl-2.5 pr-4 py-1.5 rounded-full shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 group"
+              title="Custom Hamper"
             >
-              <span>Book Surprise</span>
-              <Sparkles className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 relative flex-shrink-0">
+                <Image
+                  src="/images/custom-basket-nav.png"
+                  alt="Custom Basket"
+                  width={28}
+                  height={28}
+                  className="w-full h-full object-contain group-hover:scale-110 transition-transform"
+                />
+              </div>
+              <span>Custom Basket</span>
             </Link>
           </div>
 
-          {/* Mobile Right Action Icon */}
-          <div className="md:hidden flex items-center gap-2">
+          {/* Mobile Right Action: Custom Basket */}
+          <div className="md:hidden flex items-center">
             <Link
               href="#build-surprise"
-              className="inline-flex items-center justify-center p-2 rounded-full bg-gradient-to-r from-[#e7889b] to-[#d46f83] text-white shadow-xs"
-              aria-label="Book Surprise"
+              className="relative p-1 rounded-full transition-transform active:scale-95 hover:scale-105 flex items-center justify-center group"
+              aria-label="Custom Hamper"
+              title="Custom Hamper"
             >
-              <Sparkles className="w-4 h-4" />
+              <div className="w-10 h-10 relative drop-shadow-sm flex items-center justify-center">
+                <Image
+                  src="/images/custom-basket-nav.png"
+                  alt="Custom Basket"
+                  width={38}
+                  height={38}
+                  className="w-full h-full object-contain filter drop-shadow-sm transition-transform group-hover:scale-110"
+                />
+              </div>
             </Link>
           </div>
         </nav>
@@ -402,10 +402,18 @@ export default function Navbar() {
               <Link
                 href="#build-surprise"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#e7889b] to-[#d46f83] text-white py-2.5 rounded-full font-semibold text-sm shadow-sm"
+                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#e7889b] to-[#d46f83] text-white py-2.5 rounded-full font-bold text-sm shadow-sm"
               >
-                <span>Plan A Surprise</span>
-                <Sparkles className="w-4 h-4" />
+                <div className="w-5 h-5 relative flex-shrink-0">
+                  <Image
+                    src="/images/custom-basket-nav.png"
+                    alt="Custom Basket"
+                    width={20}
+                    height={20}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span>Create your Own Basket</span>
               </Link>
               <a
                 href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20want%20to%20plan%20a%20surprise."

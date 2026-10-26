@@ -37,7 +37,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#fce3e0] z-0">
+    <section className="relative w-full overflow-hidden bg-[#fce3e0] z-0 -mt-16 sm:-mt-[4.75rem]">
       {/* 
         Hero Banner container:
         Matches exact continuous #fce3e0 background with zero opacity fading
@@ -64,17 +64,19 @@ export default function Hero() {
             />
           </div>
 
-          {/* Desktop & Tablet Widescreen Hero Banner (1920x909) */}
+          {/* Desktop & Tablet Widescreen Hero Banner (Pixel-Perfect HD Uncompressed 1024x506) */}
           <div className="hidden sm:block w-full relative">
             <Image
-              src="/images/hero-banner-new.png"
+              src="/images/hero-banner-pc-hd.png"
               alt="Gift Town - A Little World of Extraordinary Gifts"
-              width={1920}
-              height={909}
+              width={1024}
+              height={506}
               priority
+              quality={100}
+              unoptimized
               sizes="100vw"
               style={{ width: "100%", height: "auto" }}
-              className="object-contain block"
+              className="object-contain block drop-shadow-xs"
             />
           </div>
 

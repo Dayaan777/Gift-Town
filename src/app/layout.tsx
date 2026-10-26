@@ -17,6 +17,15 @@ const jost = Jost({
 export const metadata: Metadata = {
   title: "Gift Town | A Little World of Extraordinary Gifts",
   description: "Thoughtfully curated gifts, handcrafted with love for every occasion. Fresh flower arrangements, money bouquets, customized gift hampers, and chocolate baskets.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({

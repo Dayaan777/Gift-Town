@@ -202,20 +202,26 @@ export default function FeaturedProductsSection() {
 
     fetchProducts();
 
-    // Instant Realtime Subscription
-    const channel = supabase
-      .channel("realtime-featured-products")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "featured_products" },
-        () => {
-          fetchProducts();
-        }
-      )
-      .subscribe();
+    // Realtime subscription deferred slightly so initial hydration & button events are instantaneous
+    let channel: any = null;
+    const subTimer = setTimeout(() => {
+      channel = supabase
+        .channel("realtime-featured-products")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "featured_products" },
+          () => {
+            fetchProducts();
+          }
+        )
+        .subscribe();
+    }, 1200);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearTimeout(subTimer);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
@@ -243,7 +249,7 @@ export default function FeaturedProductsSection() {
             </StickerBadge>
           </div>
 
-          <h2 className="font-display font-black text-[clamp(44px,5.8vw,88px)] text-rose leading-[1.02] tracking-tight drop-shadow-[0_2px_4px_rgba(226,64,92,0.1)]">
+          <h2 className="font-display font-black text-[clamp(30px,7.8vw,44px)] sm:text-[clamp(44px,5.8vw,88px)] text-rose leading-[1.02] tracking-tight drop-shadow-[0_2px_4px_rgba(226,64,92,0.1)] px-2">
             <span className="block">FEATURED</span>
             <span className="block">PRODUCTS</span>
           </h2>
