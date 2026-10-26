@@ -510,76 +510,87 @@ export default function GallerySection() {
 
       </div>
 
-      {/* ── Interactive Reel Video Player Modal ── */}
+            {/* ── Interactive Reel Video Player Modal ── */}
       {activeVideoModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setActiveVideoModal(null)}
         >
           <div
-            className="relative max-w-sm w-full bg-[#1a080f] rounded-3xl overflow-hidden border border-rose/30 shadow-2xl flex flex-col"
+            className="relative max-w-sm w-full max-h-[92dvh] sm:max-h-[90vh] bg-[#1a080f] rounded-3xl sm:rounded-[28px] overflow-hidden border border-rose/30 shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-3.5 bg-black/50 border-b border-white/10 z-20">
-              <div className="flex items-center gap-2">
-                <div className="relative w-6 h-6 rounded-full overflow-hidden border border-rose/40">
+            {/* Modal Header: Always visible & sticky at top so close button is immediately accessible */}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-black/85 backdrop-blur-sm border-b border-white/10 z-30">
+              <div className="flex items-center gap-2.5">
+                <div className="relative w-7 h-7 rounded-full overflow-hidden border border-rose/40">
                   <Image
                     src="/images/gift-town-logo.png"
                     alt="gift_town21"
                     fill
-                    sizes="24px"
+                    sizes="28px"
                     className="object-cover"
                   />
                 </div>
-                <span className="font-body font-bold text-xs text-white">gift_town21</span>
+                <div>
+                  <span className="block font-body font-bold text-xs text-white leading-tight">gift_town21</span>
+                  <span className="block text-[10px] text-rose font-medium">Instagram Reel</span>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setIsMuted(!isMuted)}
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white transition-all cursor-pointer"
                   title={isMuted ? "Unmute" : "Mute"}
+                  aria-label={isMuted ? "Unmute video" : "Mute video"}
                 >
                   {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveVideoModal(null)}
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-white/15 hover:bg-rose hover:text-white active:scale-95 flex items-center justify-center text-white transition-all cursor-pointer"
+                  title="Close reel"
+                  aria-label="Close reel"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Video Player */}
-            <div className="relative aspect-[9/16] bg-black">
-              <video
-                src={activeVideoModal.video}
-                autoPlay
-                loop
-                playsInline
-                muted={isMuted}
-                controls
-                className="w-full h-full object-cover"
-              />
-            </div>
+            {/* Scrollable Body: Video fits screen immediately, swipe down to view caption and Watch on IG */}
+            <div className="flex-1 overflow-y-auto overscroll-contain flex flex-col [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {/* Video Player: height constrained to fit screen alongside header */}
+              <div className="relative w-full aspect-[9/16] max-h-[calc(92dvh-4rem)] sm:max-h-[70vh] bg-black flex items-center justify-center flex-shrink-0">
+                <video
+                  src={activeVideoModal.video}
+                  autoPlay
+                  loop
+                  playsInline
+                  muted={isMuted}
+                  controls
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-            {/* Modal Footer Caption & Linkout */}
-            <div className="p-4 bg-gradient-to-t from-black via-black/90 to-transparent">
-              <p className="text-white text-xs font-semibold leading-relaxed mb-3">
-                {activeVideoModal.caption}
-              </p>
-              <a
-                href="https://www.instagram.com/gift_town21/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 rounded-full bg-rose text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#d43751] transition-colors"
-              >
-                <InstagramIcon className="w-3.5 h-3.5" />
-                <span>Watch & Like on Instagram</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              {/* Modal Footer Caption & Linkout: reached by swiping/scrolling down */}
+              <div className="flex-shrink-0 p-4 bg-gradient-to-b from-black/95 via-[#1a080f] to-[#12050b] border-t border-white/5">
+                <p className="text-white/90 text-xs font-medium leading-relaxed mb-3.5">
+                  {activeVideoModal.caption}
+                </p>
+                <a
+                  href="https://www.instagram.com/gift_town21/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-full bg-rose text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#d43751] active:scale-98 transition-all shadow-md"
+                >
+                  <InstagramIcon className="w-3.5 h-3.5" />
+                  <span>Watch & Like on Instagram</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
           </div>
         </div>

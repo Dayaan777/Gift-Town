@@ -50,17 +50,19 @@ export default function Hero() {
         }}
       >
         <div className="relative w-full max-w-[1920px]">
-          {/* Mobile Hero Banner (Transparent wavy bottom-left cutout blending into website background) */}
+          {/* Mobile Hero Banner (Transparent wavy bottom cutout blending into website background) */}
           <div className="block sm:hidden w-full relative">
             <Image
               src="/images/mobile-hero-banner.png"
-              alt="Extraordinary Gifts - Thoughtfully curated gifts for every occasion"
+              alt="Gift Town - A Little World of Extraordinary Gifts"
               width={1448}
               height={1086}
               priority
+              quality={100}
+              unoptimized
               sizes="100vw"
               style={{ width: "100%", height: "auto" }}
-              className="object-contain block"
+              className="object-contain block drop-shadow-xs"
             />
           </div>
 
