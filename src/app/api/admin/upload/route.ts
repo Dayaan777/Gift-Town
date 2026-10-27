@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
+import { supabase } from "@/lib/supabase";
 import path from "path";
 
 export async function POST(req: NextRequest) {
@@ -23,12 +23,30 @@ export async function POST(req: NextRequest) {
       .slice(0, 30);
     const fileName = `${cleanBase}-${Date.now()}${ext}`;
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    const filePath = path.join(uploadDir, fileName);
+    // Upload directly to Supabase Storage bucket 'product-images'
+    const contentType = file.type || (ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg");
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(fileName, buffer, {
+        contentType,
+        cacheControl: "31536000",
+        upsert: false,
+      });
 
-    await writeFile(filePath, buffer);
+    if (uploadError) {
+      console.error("Supabase storage upload error:", uploadError);
+      return NextResponse.json(
+        { error: uploadError.message || "Failed to upload image to cloud storage" },
+        { status: 500 }
+      );
+    }
 
-    const publicUrl = `/uploads/${fileName}`;
+    // Retrieve public URL from bucket
+    const { data: publicData } = supabase.storage
+      .from("product-images")
+      .getPublicUrl(uploadData.path);
+
+    const publicUrl = publicData.publicUrl;
 
     return NextResponse.json({ success: true, url: publicUrl, fileName });
   } catch (err: any) {

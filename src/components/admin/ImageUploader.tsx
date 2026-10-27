@@ -19,6 +19,10 @@ export default function ImageUploader({
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(currentImageUrl);
   const [errorMessage, setErrorMessage] = useState("");
+
+  React.useEffect(() => {
+    setPreviewUrl(currentImageUrl);
+  }, [currentImageUrl]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {

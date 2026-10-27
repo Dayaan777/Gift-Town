@@ -150,7 +150,7 @@ export default function AdminPage() {
     price: "4,500",
     original_price: "",
     highlight: "",
-    image: "/images/products/heart-money-lights-bouquet.png",
+    image: "",
     whatsapp_message: "",
   });
 
@@ -162,7 +162,7 @@ export default function AdminPage() {
     price: "4,500",
     original_price: "",
     highlight: "",
-    image: "/images/products/heart-money-lights-bouquet.png",
+    image: "",
     whatsapp_message: "",
   });
 
@@ -175,7 +175,7 @@ export default function AdminPage() {
     price: 350,
     subtitle: "",
     tag: "Popular",
-    image: "/images/hamper-studio/items/item-snickers.png",
+    image: "",
   });
 
   useEffect(() => {
@@ -330,7 +330,7 @@ export default function AdminPage() {
         price: "4,500",
         original_price: "",
         highlight: "",
-        image: "/images/products/heart-money-lights-bouquet.png",
+        image: "",
         whatsapp_message: "",
       });
     } else {
@@ -443,7 +443,7 @@ export default function AdminPage() {
         price: "4,500",
         original_price: "",
         highlight: "",
-        image: "/images/products/heart-money-lights-bouquet.png",
+        image: "",
         whatsapp_message: "",
       });
     } else {
@@ -568,7 +568,7 @@ export default function AdminPage() {
         price: 350,
         subtitle: "",
         tag: "Popular",
-        image: "/images/hamper-studio/items/item-snickers.png",
+        image: "",
       });
     } else {
       console.error(error);

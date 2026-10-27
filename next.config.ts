@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   images: {
     qualities: [75, 100],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ojxpixnnlilvggszjnoc.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
   },
   allowedDevOrigins: [
     "192.168.100.151",
