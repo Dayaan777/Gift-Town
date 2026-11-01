@@ -91,7 +91,7 @@ export default function Hero() {
           >
             <Link
               href="/packages"
-              className="group inline-flex items-center gap-1.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-white text-maroon backdrop-blur-md border border-rose/30 shadow-[0_8px_24px_rgba(107,21,53,0.14)] hover:shadow-[0_12px_32px_rgba(226,64,92,0.24)] transition-all duration-300 cursor-pointer active:scale-95 hover:scale-105"
+              className="group inline-flex items-center gap-1.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-white text-maroon backdrop-blur-md border border-rose/30 shadow-none sm:shadow-[0_8px_24px_rgba(107,21,53,0.14)] sm:hover:shadow-[0_12px_32px_rgba(226,64,92,0.24)] transition-all duration-300 cursor-pointer active:scale-95 hover:scale-105"
             >
               <span className="font-body font-bold text-xs sm:text-sm uppercase tracking-wider text-maroon group-hover:text-rose transition-colors">
                 View Packages
@@ -100,7 +100,7 @@ export default function Hero() {
             </Link>
             <Link
               href="/all-products"
-              className="group inline-flex items-center gap-1.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-rose hover:bg-[#d63451] text-white backdrop-blur-md border border-rose shadow-[0_8px_24px_rgba(226,64,92,0.22)] hover:shadow-[0_12px_32px_rgba(226,64,92,0.32)] transition-all duration-300 cursor-pointer active:scale-95 hover:scale-105"
+              className="group inline-flex items-center gap-1.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-rose hover:bg-[#d63451] text-white backdrop-blur-md border border-rose shadow-none sm:shadow-[0_8px_24px_rgba(226,64,92,0.22)] sm:hover:shadow-[0_12px_32px_rgba(226,64,92,0.32)] transition-all duration-300 cursor-pointer active:scale-95 hover:scale-105"
             >
               <span className="font-body font-bold text-xs sm:text-sm uppercase tracking-wider text-white">
                 All Products
