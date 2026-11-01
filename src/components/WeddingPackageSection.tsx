@@ -154,13 +154,7 @@ export default function WeddingPackageSection() {
   const [pkg, setPkg] = useState<WeddingPackageData>(DEFAULT_PACKAGE);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [viewMode, setViewMode] = useState<"full" | "customize">("full");
-  const [selectedItemIds, setSelectedItemIds] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    DEFAULT_PACKAGE.items.forEach((it) => {
-      init[it.id] = true;
-    });
-    return init;
-  });
+  const [selectedItemIds, setSelectedItemIds] = useState<Record<string, boolean>>({});
   const [previewItem, setPreviewItem] = useState<PackageItem | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -196,14 +190,6 @@ export default function WeddingPackageSection() {
             items: Array.isArray(data.items) && data.items.length > 0 ? data.items : DEFAULT_PACKAGE.items,
           };
           setPkg(loaded);
-
-          setSelectedItemIds((prev) => {
-            const next = { ...prev };
-            loaded.items.forEach((it) => {
-              if (next[it.id] === undefined) next[it.id] = true;
-            });
-            return next;
-          });
         }
       } catch (err) {
         console.error("Using default wedding package:", err);
@@ -561,7 +547,7 @@ export default function WeddingPackageSection() {
                   onClick={selectAll}
                   className="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider bg-rose/10 hover:bg-rose/20 text-rose transition-colors cursor-pointer"
                 >
-                  Select All (10)
+                  Select All ({pkg.items.length})
                 </button>
                 <button
                   type="button"
