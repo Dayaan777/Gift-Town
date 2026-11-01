@@ -19,7 +19,7 @@ const GiftsOfTheMonth = dynamic(() => import("@/components/home/GiftsOfTheMonth"
   loading: () => <div className="min-h-[480px] bg-[#fce3e0]" />,
 });
 
-const BuildSurpriseSection = dynamic(() => import("@/components/BuildSurpriseSection"), {
+const WeddingPackageSection = dynamic(() => import("@/components/WeddingPackageSection"), {
   ssr: false,
   loading: () => <div className="min-h-[700px] bg-[#fce3e0]" />,
 });
@@ -93,14 +93,14 @@ export default function Home() {
           bowSize={150}
         />
 
-        {/* 6. How to Build Your Surprise (Interactive Hamper Studio - Triggers anticipatory Gallery media caching) */}
+        {/* 6. The Engagement / Baat Pakki Wedding Package Suite (Interactive 10-Piece Ceremony Collection & Custom Builder) */}
         <LazySection
-          id="build-surprise"
+          id="custom-hamper"
           minHeight="700px"
           rootMargin="600px"
           onVisible={preloadGalleryMedia}
         >
-          <BuildSurpriseSection />
+          <WeddingPackageSection />
         </LazySection>
 
         {/* Ribbon & Bow Divider: Custom Hamper → Testimonials */}

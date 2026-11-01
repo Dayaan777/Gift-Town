@@ -104,7 +104,6 @@ export default function MidnightSurprisesSection() {
             {/* Floating Info Sticker */}
             <div className="absolute -bottom-4 right-4 z-20">
               <StickerBadge variant="gold" rotate="3" size="sm">
-                <Sparkles className="w-3 h-3 text-[#d97706]" />
                 <span>Limited Slots Per Night</span>
               </StickerBadge>
             </div>

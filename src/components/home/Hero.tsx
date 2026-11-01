@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 export default function Hero() {
   const [scrollY, setScrollY] = useState(0);
@@ -82,22 +83,30 @@ export default function Hero() {
             />
           </div>
 
-          {/* ── Interactive Floating "Scroll to Unbox" Boutique Pill ── */}
+          {/* ── Interactive Floating "View Packages" & "All Products" Pills ── */}
           <div
-            className={`absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 ${
+            className={`absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 flex items-center gap-2 sm:gap-3 ${
               progress > 0.6 ? "opacity-0 pointer-events-none translate-y-3" : "opacity-100 translate-y-0"
             }`}
           >
-            <button
-              onClick={handleScrollDown}
-              className="group inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-white/90 hover:bg-white text-maroon backdrop-blur-md border border-rose/30 shadow-[0_8px_24px_rgba(107,21,53,0.12)] hover:shadow-[0_12px_32px_rgba(226,64,92,0.22)] transition-all duration-300 cursor-pointer active:scale-95"
+            <Link
+              href="/packages"
+              className="group inline-flex items-center gap-1.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-white text-maroon backdrop-blur-md border border-rose/30 shadow-[0_8px_24px_rgba(107,21,53,0.14)] hover:shadow-[0_12px_32px_rgba(226,64,92,0.24)] transition-all duration-300 cursor-pointer active:scale-95 hover:scale-105"
             >
-              <Sparkles className="w-3.5 h-3.5 text-rose animate-spin-slow" />
-              <span className="font-body font-bold text-xs uppercase tracking-wider text-maroon group-hover:text-rose transition-colors">
-                Scroll to Unbox
+              <span className="font-body font-bold text-xs sm:text-sm uppercase tracking-wider text-maroon group-hover:text-rose transition-colors">
+                View Packages
               </span>
-              <ChevronDown className="w-4 h-4 text-rose animate-bounce" />
-            </button>
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+            <Link
+              href="/all-products"
+              className="group inline-flex items-center gap-1.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-rose hover:bg-[#d63451] text-white backdrop-blur-md border border-rose shadow-[0_8px_24px_rgba(226,64,92,0.22)] hover:shadow-[0_12px_32px_rgba(226,64,92,0.32)] transition-all duration-300 cursor-pointer active:scale-95 hover:scale-105"
+            >
+              <span className="font-body font-bold text-xs sm:text-sm uppercase tracking-wider text-white">
+                All Products
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
         </div>
       </div>

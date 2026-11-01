@@ -119,12 +119,11 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className={`inline-flex items-center gap-1.5 text-[14px] lg:text-[15px] font-bold transition-all relative group py-1 cursor-pointer ${
+                className={`inline-flex items-center gap-1 text-[14px] lg:text-[15px] font-bold transition-all relative group py-1 cursor-pointer ${
                   giftsDropdownOpen ? "text-[#7a233c]" : "text-neutral-800 hover:text-[#7a233c]"
                 }`}
                 aria-expanded={giftsDropdownOpen}
               >
-                <Gift className="w-4 h-4 text-rose transition-transform group-hover:rotate-12" />
                 <span className="tracking-wide uppercase text-xs lg:text-sm font-extrabold">GIFTS</span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 text-rose transition-transform duration-300 ${
@@ -151,8 +150,7 @@ export default function Navbar() {
 
                     <div className="px-2 pt-1 pb-2.5 flex items-center justify-between border-b border-rose/10">
                       <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-rose">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Curated Gift Collections</span>
+                        <span>Handpicked Gift Collections</span>
                       </div>
                       <span className="text-[10px] text-maroon/60 font-semibold bg-rose/10 px-2 py-0.5 rounded-full">
                         Thatta &amp; Makli Handcrafted
@@ -162,7 +160,7 @@ export default function Navbar() {
                     <div className="grid grid-cols-2 gap-3 pt-3">
                       {/* Option A: Gifts By Sentiments */}
                       <Link
-                        href="#sentiments"
+                        href="/#sentiments"
                         onClick={() => setGiftsDropdownOpen(false)}
                         className="group relative rounded-2xl p-3 bg-gradient-to-br from-[#fef7f8] to-[#fbf0f2] border border-rose/15 hover:border-rose/40 hover:bg-white hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                       >
@@ -191,7 +189,7 @@ export default function Navbar() {
 
                       {/* Option B: Gifts of The Month */}
                       <Link
-                        href="#gifts-of-the-month"
+                        href="/#gifts-of-the-month"
                         onClick={() => setGiftsDropdownOpen(false)}
                         className="group relative rounded-2xl p-3 bg-gradient-to-br from-[#fef8f4] to-[#fcf3ea] border border-[#f5c058]/30 hover:border-[#f5c058]/60 hover:bg-white hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                       >
@@ -241,11 +239,10 @@ export default function Navbar() {
 
             {/* 2. BESTSELLERS (Separate direct link to #packages) */}
             <Link
-              href="#packages"
-              className="text-[14px] lg:text-[15px] font-semibold text-neutral-800 hover:text-[#7a233c] transition-colors relative group py-1 flex items-center gap-1.5"
+              href="/packages"
+              className="text-[14px] lg:text-[15px] font-semibold text-neutral-800 hover:text-[#7a233c] transition-colors relative group py-1 flex items-center"
             >
-              <Flame className="w-4 h-4 text-rose" />
-              <span>Bestsellers</span>
+              <span>Packages</span>
               <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#d46f83] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
             </Link>
           </div>
@@ -271,17 +268,16 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-5 lg:space-x-6 flex-1 justify-end">
             {/* All Products (Moved to right side) */}
             <Link
-              href="#featured-products"
-              className="text-[14px] lg:text-[15px] font-semibold text-neutral-800 hover:text-[#7a233c] transition-colors relative group py-1 flex items-center gap-1.5"
+              href="/all-products"
+              className="text-[14px] lg:text-[15px] font-semibold text-neutral-800 hover:text-[#7a233c] transition-colors relative group py-1 flex items-center"
             >
-              <PackageOpen className="w-4 h-4 text-rose" />
               <span>All Products</span>
               <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#d46f83] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
             </Link>
 
             {/* Custom Basket Button with uploaded basket image */}
             <Link
-              href="#build-surprise"
+              href="/custom"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-[#e7889b] to-[#d46f83] hover:from-[#df778c] hover:to-[#c75e72] text-white text-[13px] lg:text-[14px] font-bold pl-2.5 pr-4 py-1.5 rounded-full shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 group"
               title="Custom Hamper"
             >
@@ -301,7 +297,7 @@ export default function Navbar() {
           {/* Mobile Right Action: Custom Basket */}
           <div className="md:hidden flex items-center">
             <Link
-              href="#build-surprise"
+              href="/custom"
               className="relative p-1 rounded-full transition-transform active:scale-95 hover:scale-105 flex items-center justify-center group"
               aria-label="Custom Hamper"
               title="Custom Hamper"
@@ -330,8 +326,7 @@ export default function Navbar() {
                   onClick={() => setMobileGiftsOpen(!mobileGiftsOpen)}
                   className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-[#faedf0] text-[#581c2d] font-bold text-sm"
                 >
-                  <span className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-rose" />
+                  <span className="flex items-center">
                     <span>GIFTS</span>
                   </span>
                   <ChevronDown
@@ -344,24 +339,26 @@ export default function Navbar() {
                 {mobileGiftsOpen && (
                   <div className="pl-4 pr-2 pt-2 pb-1 space-y-1.5 border-l-2 border-rose/30 ml-4 mt-1">
                     <Link
-                      href="#sentiments"
+                      href="/#sentiments"
                       onClick={() => {
                         setMobileMenuOpen(false);
                         setMobileGiftsOpen(false);
                       }}
-                      className="block py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
+                      className="flex items-center gap-2 py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
                     >
-                      💝 Gifts by Sentiments
+                      <Heart className="w-3.5 h-3.5 text-rose shrink-0" />
+                      <span>Gifts by Sentiments</span>
                     </Link>
                     <Link
-                      href="#gifts-of-the-month"
+                      href="/#gifts-of-the-month"
                       onClick={() => {
                         setMobileMenuOpen(false);
                         setMobileGiftsOpen(false);
                       }}
-                      className="block py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
+                      className="flex items-center gap-2 py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
                     >
-                      🌟 Gifts of the Month
+                      <Sparkles className="w-3.5 h-3.5 text-[#b46513] shrink-0" />
+                      <span>Gifts of the Month</span>
                     </Link>
                   </div>
                 )}
@@ -369,38 +366,36 @@ export default function Navbar() {
 
               {/* Bestsellers */}
               <Link
-                href="#packages"
+                href="/packages"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-[#faedf0] text-neutral-800 font-semibold text-sm"
+                className="flex items-center py-2 px-3 rounded-lg hover:bg-[#faedf0] text-neutral-800 font-semibold text-sm"
               >
-                <Flame className="w-4 h-4 text-rose" />
-                <span>Bestsellers</span>
+                <span>Packages</span>
               </Link>
 
               {/* All Products */}
               <Link
-                href="#featured-products"
+                href="/all-products"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-[#faedf0] text-neutral-800 font-semibold text-sm"
+                className="flex items-center py-2 px-3 rounded-lg hover:bg-[#faedf0] text-neutral-800 font-semibold text-sm"
               >
-                <PackageOpen className="w-4 h-4 text-rose" />
                 <span>All Products</span>
               </Link>
 
-              {/* Create your Own Basket */}
+              {/* Custom Basket */}
               <Link
-                href="#build-surprise"
+                href="/custom"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-[#faedf0] text-neutral-800 font-semibold text-sm"
               >
                 <ShoppingBag className="w-4 h-4 text-rose" />
-                <span>Create your Own Basket</span>
+                <span>Custom Basket</span>
               </Link>
             </div>
 
             <div className="pt-2 border-t border-[#f5d5db] flex flex-col gap-2">
               <Link
-                href="#build-surprise"
+                href="/custom"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#e7889b] to-[#d46f83] text-white py-2.5 rounded-full font-bold text-sm shadow-sm"
               >

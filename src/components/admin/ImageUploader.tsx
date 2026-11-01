@@ -145,7 +145,7 @@ export default function ImageUploader({
         {isUploading && (
           <div className="absolute inset-0 bg-white/90 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
             <div className="w-8 h-8 rounded-full border-2 border-rose border-t-transparent animate-spin" />
-            <span className="text-xs font-bold text-rose">Uploading image...</span>
+            <span className="text-xs font-bold text-rose">Optimizing &amp; uploading WebP...</span>
           </div>
         )}
       </div>

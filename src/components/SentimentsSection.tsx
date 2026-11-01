@@ -96,7 +96,6 @@ export default function SentimentsSection() {
       <div className="relative z-20 text-center max-w-4xl mx-auto px-4 mb-10 sm:mb-14">
         <div className="flex items-center justify-center mb-4">
           <StickerBadge variant="rose" rotate="-2" size="sm">
-            <Heart className="w-3.5 h-3.5 fill-[#d46f83] text-[#d46f83]" />
             <span>Express What Words Cannot</span>
           </StickerBadge>
         </div>
@@ -107,7 +106,7 @@ export default function SentimentsSection() {
         </h2>
         
         <p className="font-body font-medium text-sm sm:text-base text-maroon/80 mt-4 max-w-xl mx-auto leading-relaxed">
-          Sometimes occasions aren&apos;t enough. Pick the emotion in your heart, and we&apos;ll curate the perfect surprise.
+          Sometimes occasions aren&apos;t enough. Pick the emotion in your heart, and we&apos;ll create the perfect surprise.
         </p>
       </div>
 
@@ -212,10 +211,9 @@ export default function SentimentsSection() {
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <Link
-              href="#packages"
+              href="/packages"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-cream text-maroon border border-maroon/20 hover:border-maroon px-6 py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all hover:scale-105"
             >
-              <Sparkles className="w-3.5 h-3.5 text-rose" />
               <span>View Packages</span>
             </Link>
 
@@ -226,7 +224,7 @@ export default function SentimentsSection() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white px-7 py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover:scale-105"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>Curate on WhatsApp</span>
+              <span>Order on WhatsApp</span>
             </a>
           </div>
 

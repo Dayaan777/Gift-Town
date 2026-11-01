@@ -16,7 +16,7 @@ const jost = Jost({
 
 export const metadata: Metadata = {
   title: "Gift Town | A Little World of Extraordinary Gifts",
-  description: "Thoughtfully curated gifts, handcrafted with love for every occasion. Fresh flower arrangements, money bouquets, customized gift hampers, and chocolate baskets.",
+  description: "Thoughtfully crafted gifts, made with love for every occasion. Fresh flower arrangements, money bouquets, customized gift hampers, and chocolate baskets.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

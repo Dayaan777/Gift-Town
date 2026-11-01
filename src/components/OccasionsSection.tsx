@@ -75,7 +75,7 @@ export default function OccasionsSection() {
             Shop by <span className="italic text-[#7a233c] font-normal">Occasion</span>
           </h2>
           <p className="text-neutral-600 text-sm sm:text-base leading-relaxed">
-            Every celebration deserves a tailor-made surprise. Discover curated combinations crafted specifically for your dearest memories.
+            Every celebration deserves a tailor-made surprise. Discover thoughtful gift combinations crafted specifically for your dearest memories.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   Sparkles,
@@ -15,6 +16,7 @@ import {
   Heart,
 } from "lucide-react";
 import StickerBadge from "@/components/StickerBadge";
+import QuickViewMediaGallery, { MediaItem } from "@/components/QuickViewMediaGallery";
 import { supabase } from "@/lib/supabase";
 
 export interface BestsellerProduct {
@@ -32,6 +34,7 @@ export interface BestsellerProduct {
   itemsIncluded: string[];
   image: string;
   whatsappMessage: string;
+  media_gallery?: MediaItem[];
   image_scale?: number;
   image_position?: string;
   image_offset_y?: number;
@@ -157,6 +160,22 @@ export default function FeaturedPackagesSection() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [previewItem, setPreviewItem] = useState<BestsellerProduct | null>(null);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Prevent background page scrolling when quick-view modal is open
+  useEffect(() => {
+    if (previewItem) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [previewItem]);
 
   // Sync with live Supabase table
   useEffect(() => {
@@ -183,6 +202,7 @@ export default function FeaturedPackagesSection() {
             inclusions: Array.isArray(d.inclusions) ? d.inclusions : [],
             itemsIncluded: Array.isArray(d.items_included) ? d.items_included : [],
             image: d.image,
+            media_gallery: Array.isArray(d.media_gallery) ? d.media_gallery : [],
             whatsappMessage:
               d.whatsapp_message ||
               `Hi Gift Town! I want to order the '${d.name}'.`,
@@ -288,7 +308,6 @@ export default function FeaturedPackagesSection() {
         <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-14">
           <div className="flex items-center justify-center mb-4">
             <StickerBadge variant="rose" rotate="-2" size="sm">
-              <Flame className="w-3.5 h-3.5 fill-[#d46f83] text-[#d46f83]" />
               <span>Handcrafted &amp; Most In-Demand</span>
             </StickerBadge>
           </div>
@@ -299,7 +318,7 @@ export default function FeaturedPackagesSection() {
           </h2>
 
           <p className="font-body font-medium text-sm sm:text-base text-maroon/80 mt-4 max-w-2xl mx-auto leading-relaxed">
-            Our most celebrated curated packages — tailored with love for doorstep surprise handovers in Thatta &amp; Makli or dispatched nationwide.
+            Our most celebrated gift packages — tailored with love for doorstep surprise handovers in Thatta &amp; Makli or dispatched nationwide.
           </p>
 
           {/* ── Category Quick Jump Tabs ── */}
@@ -479,99 +498,120 @@ export default function FeaturedPackagesSection() {
         </div>
       </div>
 
-      {/* ── Clean Editorial Quick Look Modal ── */}
-      {previewItem && (
+      {/* ── Clean Editorial Quick Look Modal (Portalled directly to document.body) ── */}
+      {mounted && previewItem && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-maroon/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-md flex items-center justify-center p-3 pt-2 pb-8 sm:p-5 overflow-hidden animate-in fade-in duration-200"
           onClick={() => setPreviewItem(null)}
         >
           <div
-            className="relative w-full max-w-lg bg-white rounded-[32px] p-6 sm:p-8 shadow-2xl border border-rose/20"
+            className="relative w-full max-w-md md:max-w-[480px] bg-white rounded-[28px] sm:rounded-[32px] p-4 sm:p-6 shadow-2xl border border-rose/25 max-h-[86vh] sm:max-h-[88vh] -translate-y-2 sm:translate-y-0 flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3.5 border-b border-rose/15">
-              <span className="text-xs font-bold uppercase tracking-wider text-rose">
+            {/* Header: Badge & Close Button */}
+            <div className="flex items-center justify-between pb-3 border-b border-rose/15 flex-shrink-0">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-rose">
                 {previewItem.badge} • {previewItem.categoryTag}
               </span>
               <button
+                type="button"
                 onClick={() => setPreviewItem(null)}
-                className="w-8 h-8 rounded-full bg-cream/70 hover:bg-cream text-maroon flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-rose/10 hover:bg-rose/20 text-maroon flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+                aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
 
-            {/* Modal Image Showcase */}
-            <div className="relative w-full h-56 rounded-2xl overflow-hidden my-4 bg-gradient-to-b from-[#fef8f9] to-[#faedf0] border border-rose/15 p-3 flex items-center justify-center">
-              <div
-                className="relative w-full h-full"
-                style={{
-                  transform: `scale(${(previewItem.image_scale ?? 100) / 100}) translate3d(${previewItem.image_offset_x ?? 0}px, ${previewItem.image_offset_y ?? 0}px, 0)`,
-                }}
-              >
-                <Image
-                  src={previewItem.image}
-                  alt={previewItem.name}
-                  fill
-                  className="object-contain drop-shadow-md"
-                  style={{ objectPosition: previewItem.image_position || "center" }}
-                />
-              </div>
-            </div>
+            {/* Scrollable Content Body */}
+            <div className="overflow-y-auto flex-1 pr-1.5 -mr-1.5 my-3 space-y-3.5 overscroll-contain">
+              {/* Swipable Modal Media Showcase (Cover + Secondary Images/Videos) */}
+              <QuickViewMediaGallery
+                coverImage={previewItem.image}
+                productName={previewItem.name}
+                secondaryMedia={previewItem.media_gallery}
+                imageScale={previewItem.image_scale ?? 100}
+                imagePosition={previewItem.image_position || "center"}
+                imageOffsetX={previewItem.image_offset_x ?? 0}
+                imageOffsetY={previewItem.image_offset_y ?? 0}
+              />
 
-            <div>
-              <h3 className="font-serif font-black text-2xl text-maroon mb-1">
-                {previewItem.name}
-              </h3>
-              <p className="font-body text-xs text-maroon/70 leading-relaxed mb-3">
-                {previewItem.highlight}
-              </p>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="font-display font-black text-2xl text-maroon">
-                  PKR {previewItem.price}
-                </span>
-                {previewItem.originalPrice && (
-                  <span className="text-sm text-maroon/40 line-through">
-                    PKR {previewItem.originalPrice}
+              {/* Title & Price Header */}
+              <div>
+                <h3 className="font-serif font-black text-lg sm:text-xl text-maroon mb-1">
+                  {previewItem.name}
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display font-black text-lg sm:text-xl text-maroon">
+                    PKR {previewItem.price}
                   </span>
-                )}
-                <span className="ml-auto text-xs font-semibold text-rose bg-rose/10 px-2.5 py-0.5 rounded-full">
-                  ★ {previewItem.rating.toFixed(1)} ({previewItem.reviewsCount} reviews)
+                  {previewItem.originalPrice && (
+                    <span className="text-xs sm:text-sm text-maroon/40 line-through">
+                      PKR {previewItem.originalPrice}
+                    </span>
+                  )}
+                  <span className="ml-auto text-xs font-semibold text-rose bg-rose/10 px-2.5 py-0.5 rounded-full">
+                    ★ {previewItem.rating.toFixed(1)} ({previewItem.reviewsCount} reviews)
+                  </span>
+                </div>
+              </div>
+
+              {/* What's Included in this package: Shows admin description or bullet list */}
+              <div className="bg-[#fdf5f6] p-3.5 sm:p-4 rounded-2xl border border-rose/15">
+                <span className="font-body text-xs font-bold uppercase tracking-wider text-maroon block mb-2">
+                  What&apos;s Included in this package:
                 </span>
+                {previewItem.highlight ? (
+                  <div className="space-y-1.5">
+                    {previewItem.highlight
+                      .split(/\r?\n/)
+                      .map((line) => line.trim())
+                      .filter(Boolean)
+                      .map((line, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose flex-shrink-0 mt-1.5" />
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                  </div>
+                ) : (previewItem.itemsIncluded && previewItem.itemsIncluded.length > 0) ? (
+                  <ul className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
+                    {previewItem.itemsIncluded.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose flex-shrink-0 mt-1.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                    Custom handcrafted arrangement with luxury wrappers and personalized wish card.
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2.5 bg-[#fdf5f6] p-4 rounded-2xl my-5 border border-rose/15">
-              <span className="font-body text-xs font-bold uppercase tracking-wider text-maroon block">
-                What&apos;s Included in this package:
-              </span>
-              <ul className="space-y-2 text-xs sm:text-sm text-neutral-700">
-                {previewItem.itemsIncluded.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-rose flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+            {/* Sticky Action Footer */}
+            <div className="pt-3 border-t border-rose/15 flex-shrink-0">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(previewItem.whatsappMessage)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Confirm &amp; Book on WhatsApp</span>
+              </a>
             </div>
-
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(previewItem.whatsappMessage)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white py-3.5 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Confirm &amp; Book on WhatsApp</span>
-            </a>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
 }
 
-{/* ── Sub-Component: CleanBoutiqueCard (Clean, Editorial, High-Converting) ── */}
+{/* ── Sub-Component: CleanBoutiqueCard (Clean Editorial Lookbook Card for Photographic Backgrounds) ── */}
 function CleanBoutiqueCard({
   product,
   isCenter,
@@ -587,22 +627,44 @@ function CleanBoutiqueCard({
 }) {
   return (
     <div
-      className={`relative w-full h-full rounded-[32px] lg:rounded-[36px] bg-white border flex flex-col justify-between overflow-hidden transition-all duration-500 group ${
+      onClick={onQuickLook}
+      className={`relative w-full h-full rounded-[32px] lg:rounded-[36px] bg-white border flex flex-col justify-between overflow-hidden transition-all duration-500 group cursor-pointer ${
         isCenter
           ? "border-rose/30 shadow-[0_22px_55px_rgba(107,21,53,0.14)]"
           : "border-rose/15 shadow-[0_12px_32px_rgba(107,21,53,0.06)] hover:border-rose/30 hover:shadow-[0_20px_45px_rgba(107,21,53,0.1)]"
       }`}
     >
-      {/* ── Upper Showcase Vitrine (Generous, Clean Photo Display Area) ── */}
-      <div className="relative w-full h-[290px] lg:h-[315px] p-4 bg-gradient-to-b from-[#fef8f9] via-[#fdf4f6] to-[#faedf0] overflow-hidden flex items-center justify-center">
-        
-        {/* Soft studio vignette glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.7)_0%,_transparent_75%)] pointer-events-none" />
+      {/* ── Upper Showcase Vitrine (Full-Bleed Photographic Display Window) ── */}
+      <div className="relative w-full h-[280px] lg:h-[310px] overflow-hidden rounded-t-[32px] lg:rounded-t-[36px] bg-[#f8e6e8]">
+        {/* Full-bleed Product Image with subtle cinematic hover zoom */}
+        <div
+          className="relative w-full h-full transition-transform duration-700 ease-out group-hover:scale-105"
+          style={{
+            transform: `scale(${(product.image_scale ?? 100) / 100}) translate3d(${product.image_offset_x ?? 0}px, ${product.image_offset_y ?? 0}px, 0)`,
+          }}
+        >
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 340px, 420px"
+            className="object-cover"
+            style={{
+              objectPosition: product.image_position || "center",
+            }}
+            priority={product.id === "prod-1" || product.id === "prod-2" || product.id === "prod-3"}
+          />
+        </div>
+
+        {/* Top Scrim Gradient (Guarantees badge and heart readability on any photo background) */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/45 via-black/15 to-transparent z-10 pointer-events-none" />
+
+        {/* Bottom Feather Gradient (Smooth transition into pure white card body) */}
+        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white via-white/50 to-transparent z-10 pointer-events-none" />
 
         {/* Top Badging Row: Left Tag & Right Heart Button */}
         <div className="absolute top-3.5 inset-x-3.5 z-20 flex items-center justify-between pointer-events-none">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-white/90 backdrop-blur-md text-maroon border border-rose/15 shadow-2xs">
-            <Sparkles className="w-3 h-3 text-rose" />
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-white/95 backdrop-blur-md text-maroon border border-white/60 shadow-sm">
             <span>{product.badge}</span>
           </span>
 
@@ -612,7 +674,7 @@ function CleanBoutiqueCard({
               e.stopPropagation();
               onToggleLike();
             }}
-            className="pointer-events-auto w-8 h-8 rounded-full bg-white/90 backdrop-blur-md border border-rose/15 flex items-center justify-center text-maroon/60 hover:text-rose hover:bg-white shadow-2xs transition-all active:scale-90 cursor-pointer"
+            className="pointer-events-auto w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-white/60 flex items-center justify-center text-maroon/70 hover:text-rose hover:bg-white shadow-sm transition-all active:scale-90 cursor-pointer"
             aria-label="Save to wishlist"
           >
             <Heart
@@ -623,29 +685,7 @@ function CleanBoutiqueCard({
           </button>
         </div>
 
-        {/* Real Product Image with tactile hover lift */}
-        <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-          <div
-            className="relative w-full h-full transition-transform duration-500 ease-out group-hover:scale-106 group-hover:-translate-y-1"
-            style={{
-              transform: `scale(${(product.image_scale ?? 100) / 100}) translate3d(${product.image_offset_x ?? 0}px, ${product.image_offset_y ?? 0}px, 0)`,
-            }}
-          >
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              sizes="(max-width: 768px) 340px, 420px"
-              className="object-contain drop-shadow-md"
-              style={{
-                objectPosition: product.image_position || "center",
-              }}
-              priority={product.id === "prod-1" || product.id === "prod-2" || product.id === "prod-3"}
-            />
-          </div>
-        </div>
-
-        {/* Floating Quick View Pill on Hover (Doesn't block the photo!) */}
+        {/* Floating Quick View Pill on Hover */}
         <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none z-20">
           <button
             type="button"
@@ -653,7 +693,7 @@ function CleanBoutiqueCard({
               e.stopPropagation();
               onQuickLook();
             }}
-            className="pointer-events-auto opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-maroon/90 hover:bg-maroon text-[#FFF4D0] text-[11px] font-bold tracking-wider uppercase backdrop-blur-md shadow-md active:scale-95 cursor-pointer"
+            className="pointer-events-auto opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-maroon/90 hover:bg-maroon text-[#FFF4D0] text-[11px] font-bold tracking-wider uppercase backdrop-blur-md shadow-lg active:scale-95 cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>Quick Inspect</span>

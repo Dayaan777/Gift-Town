@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   Sparkles,
@@ -10,8 +11,12 @@ import {
   Heart,
   ArrowRight,
   Filter,
+  ChevronLeft,
+  ChevronRight,
+  Check,
 } from "lucide-react";
 import StickerBadge from "@/components/StickerBadge";
+import QuickViewMediaGallery, { MediaItem } from "@/components/QuickViewMediaGallery";
 import { supabase } from "@/lib/supabase";
 
 export interface CatalogProduct {
@@ -27,6 +32,7 @@ export interface CatalogProduct {
   highlight: string;
   image: string;
   whatsappMessage: string;
+  media_gallery?: MediaItem[];
   image_scale?: number;
   image_position?: string;
   image_offset_y?: number;
@@ -161,6 +167,28 @@ export default function FeaturedProductsSection() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [previewItem, setPreviewItem] = useState<CatalogProduct | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Prevent background page scrolling when quick-view modal is open
+  useEffect(() => {
+    if (previewItem) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [previewItem]);
+
+  // Mobile slider state (shows 1 card at a time with swipe navigation)
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const touchStartX = React.useRef<number | null>(null);
+  const touchStartY = React.useRef<number | null>(null);
 
   // Load from Supabase with instant realtime updates
   useEffect(() => {
@@ -185,6 +213,7 @@ export default function FeaturedProductsSection() {
             reviewsCount: Number(d.reviews_count) || 45,
             highlight: d.highlight || "",
             image: d.image,
+            media_gallery: Array.isArray(d.media_gallery) ? d.media_gallery : [],
             whatsappMessage:
               d.whatsapp_message ||
               `Hi Gift Town! I want to order the '${d.name}'.`,
@@ -234,6 +263,56 @@ export default function FeaturedProductsSection() {
       ? products
       : products.filter((p) => p.category === selectedCategory);
 
+  const total = filteredProducts.length;
+
+  // Reset index if category filter changes or total shrinks
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [selectedCategory]);
+
+  const handlePrev = () => {
+    if (isAnimating || total === 0) return;
+    setIsAnimating(true);
+    setCurrentIndex((prev) => (prev - 1 + total) % total);
+    setTimeout(() => setIsAnimating(false), 500);
+  };
+
+  const handleNext = () => {
+    if (isAnimating || total === 0) return;
+    setIsAnimating(true);
+    setCurrentIndex((prev) => (prev + 1) % total);
+    setTimeout(() => setIsAnimating(false), 500);
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Trigger swipe only if horizontal movement is dominant and > 40px
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+      if (deltaX < 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  const jumpToSlide = (idx: number) => {
+    if (isAnimating || idx === currentIndex || total === 0) return;
+    setIsAnimating(true);
+    setCurrentIndex(idx);
+    setTimeout(() => setIsAnimating(false), 500);
+  };
+
   return (
     <section
       id="featured-products"
@@ -244,7 +323,6 @@ export default function FeaturedProductsSection() {
         <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-14">
           <div className="flex items-center justify-center mb-4">
             <StickerBadge variant="rose" rotate="-2" size="sm">
-              <Sparkles className="w-3.5 h-3.5 fill-[#d46f83] text-[#d46f83]" />
               <span>Complete Boutique Collection</span>
             </StickerBadge>
           </div>
@@ -279,208 +357,355 @@ export default function FeaturedProductsSection() {
           </div>
         </div>
 
-        {/* ── Product Grid (Responsive: 1-col mobile, 2-col tablet, 4-col desktop) ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7">
+        {/* ── Desktop & Tablet Grid: Multi-column Showcase (sm: 2-col, lg: 4-col) ── */}
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7">
           {filteredProducts.map((product) => {
             const isLiked = !!likedMap[product.id];
-
             return (
-              <div
+              <ProductCard
                 key={product.id}
-                className="group relative rounded-[28px] bg-white border border-rose/15 shadow-[0_10px_28px_rgba(107,21,53,0.06)] hover:shadow-[0_18px_42px_rgba(107,21,53,0.12)] hover:border-rose/30 transition-all duration-400 flex flex-col justify-between overflow-hidden"
-              >
-                {/* Visual Image Showcase */}
-                <div className="relative w-full h-56 sm:h-64 p-4 bg-gradient-to-b from-[#fef8f9] via-[#fdf4f6] to-[#faedf0] overflow-hidden flex items-center justify-center">
-                  {/* Badge & Heart Button */}
-                  <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between pointer-events-none">
-                    {product.badge ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-white/90 backdrop-blur-md text-maroon border border-rose/15 shadow-2xs">
-                        {product.badge}
-                      </span>
-                    ) : (
-                      <span />
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => toggleLike(product.id)}
-                      className="pointer-events-auto w-7 h-7 rounded-full bg-white/90 backdrop-blur-md border border-rose/15 flex items-center justify-center text-maroon/60 hover:text-rose hover:bg-white shadow-2xs transition-all active:scale-90 cursor-pointer"
-                      aria-label="Save to favorites"
-                    >
-                      <Heart
-                        className={`w-3.5 h-3.5 transition-colors ${
-                          isLiked ? "fill-rose text-rose" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Product Image */}
-                  <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                    <div
-                      className="relative w-full h-full transition-transform duration-500 ease-out group-hover:scale-106 group-hover:-translate-y-1"
-                      style={{
-                        transform: `scale(${(product.image_scale ?? 100) / 100}) translate3d(${product.image_offset_x ?? 0}px, ${product.image_offset_y ?? 0}px, 0)`,
-                      }}
-                    >
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        className="object-contain drop-shadow-md"
-                        style={{
-                          objectPosition: product.image_position || "center",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Quick Inspect Button on Hover */}
-                  <div className="absolute bottom-2.5 inset-x-0 flex justify-center pointer-events-none z-20">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewItem(product)}
-                      className="pointer-events-auto opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-maroon/90 hover:bg-maroon text-[#FFF4D0] text-[10px] font-bold tracking-wider uppercase backdrop-blur-md shadow-md active:scale-95 cursor-pointer"
-                    >
-                      <Eye className="w-3 h-3" />
-                      <span>Quick View</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details Card */}
-                <div className="p-4 sm:p-5 flex flex-col justify-between flex-1">
-                  <div>
-                    {/* Rating & Tag */}
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-[10px] uppercase tracking-wider text-rose">
-                        {product.categoryTag}
-                      </span>
-                      <div className="flex items-center gap-1 text-amber-500 font-bold text-[11px]">
-                        <Star className="w-3 h-3 fill-current" />
-                        <span>{product.rating.toFixed(1)}</span>
-                      </div>
-                    </div>
-
-                    {/* Product Name */}
-                    <h3 className="font-serif font-bold text-base text-maroon group-hover:text-rose transition-colors duration-200 line-clamp-1 mb-1.5">
-                      {product.name}
-                    </h3>
-
-                    {/* Highlight Description */}
-                    <p className="font-body text-xs text-maroon/70 leading-relaxed line-clamp-2 mb-3">
-                      {product.highlight}
-                    </p>
-                  </div>
-
-                  {/* Price & Action Row */}
-                  <div className="mt-2 pt-3 border-t border-rose/15 flex items-center justify-between gap-2">
-                    <div>
-                      <span className="block text-[9px] uppercase font-bold tracking-widest text-maroon/50">
-                        Price
-                      </span>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-display font-black text-base sm:text-lg text-maroon">
-                          PKR {product.price}
-                        </span>
-                        {product.originalPrice && (
-                          <span className="text-[10px] text-maroon/40 line-through">
-                            PKR {product.originalPrice}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(product.whatsappMessage)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white px-3.5 py-2 rounded-full font-body font-bold text-[11px] uppercase tracking-wider shadow-xs hover:shadow-sm transition-all hover:scale-105 active:scale-95"
-                    >
-                      <MessageCircle className="w-3 h-3" />
-                      <span>Order</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
+                product={product}
+                isLiked={isLiked}
+                onToggleLike={() => toggleLike(product.id)}
+                onPreview={() => setPreviewItem(product)}
+              />
             );
           })}
         </div>
+
+        {/* ── Mobile Touch Slider (Shows 1 card at a time with swipe gesture, arrows & dots) ── */}
+        <div className="sm:hidden relative w-full px-2">
+          {total > 1 && (
+            <>
+              {/* Left Arrow Button */}
+              <button
+                onClick={handlePrev}
+                disabled={isAnimating}
+                aria-label="Previous product"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-rose text-white flex items-center justify-center shadow-xl hover:bg-[#cf334e] active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+
+              {/* Right Arrow Button */}
+              <button
+                onClick={handleNext}
+                disabled={isAnimating}
+                aria-label="Next product"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-rose text-white flex items-center justify-center shadow-xl hover:bg-[#cf334e] active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          {/* Swipe Container */}
+          <div
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            className="relative h-[530px] w-full flex items-center justify-center overflow-visible touch-pan-y"
+          >
+            {filteredProducts.map((product, idx) => {
+              let diff = idx - currentIndex;
+              if (diff > total / 2) diff -= total;
+              if (diff < -total / 2) diff += total;
+
+              const isCenter = diff === 0;
+              const isLiked = !!likedMap[product.id];
+
+              return (
+                <div
+                  key={product.id}
+                  className="absolute w-[290px] h-[510px]"
+                  style={{
+                    transform: `translate3d(${diff * 105}%, 0, 0) scale(${isCenter ? 1 : 0.86})`,
+                    opacity: isCenter ? 1 : 0,
+                    pointerEvents: isCenter ? "auto" : "none",
+                    transition:
+                      "transform 500ms cubic-bezier(0.25, 1, 0.5, 1), opacity 400ms ease",
+                  }}
+                >
+                  <ProductCard
+                    product={product}
+                    isLiked={isLiked}
+                    onToggleLike={() => toggleLike(product.id)}
+                    onPreview={() => setPreviewItem(product)}
+                    priority={idx === 0}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Dot Navigation Indicators for Mobile */}
+          {total > 1 && (
+            <div className="relative z-20 flex items-center justify-center gap-2 mt-4">
+              {filteredProducts.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => jumpToSlide(idx)}
+                  aria-label={`Go to product ${idx + 1}`}
+                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                    currentIndex === idx
+                      ? "w-7 bg-rose shadow-xs"
+                      : "w-2 bg-rose/30 hover:bg-rose/60"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ── Quick Inspect Modal ── */}
-      {previewItem && (
+      {/* ── Quick Inspect Modal (Portalled directly to document.body) ── */}
+      {mounted && previewItem && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-maroon/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-md flex items-center justify-center p-3 pt-2 pb-8 sm:p-5 overflow-hidden animate-in fade-in duration-200"
           onClick={() => setPreviewItem(null)}
         >
           <div
-            className="relative w-full max-w-lg bg-white rounded-[32px] p-6 sm:p-8 shadow-2xl border border-rose/20"
+            className="relative w-full max-w-md md:max-w-[480px] bg-white rounded-[28px] sm:rounded-[32px] p-4 sm:p-6 shadow-2xl border border-rose/25 max-h-[86vh] sm:max-h-[88vh] -translate-y-2 sm:translate-y-0 flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3.5 border-b border-rose/15">
-              <span className="text-xs font-bold uppercase tracking-wider text-rose">
+            {/* Header: Category & Close Button */}
+            <div className="flex items-center justify-between pb-3 border-b border-rose/15 flex-shrink-0">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-rose">
                 {previewItem.categoryTag}
               </span>
               <button
                 type="button"
                 onClick={() => setPreviewItem(null)}
                 className="w-8 h-8 rounded-full bg-rose/10 hover:bg-rose/20 text-maroon flex items-center justify-center font-bold text-sm cursor-pointer transition-colors"
+                aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
 
-            <div className="relative w-full h-64 sm:h-72 my-4 bg-gradient-to-b from-[#fef8f9] to-[#faedf0] rounded-2xl flex items-center justify-center p-4 overflow-hidden">
-              <div
-                className="relative w-full h-full"
-                style={{
-                  transform: `scale(${(previewItem.image_scale ?? 100) / 100}) translate3d(${previewItem.image_offset_x ?? 0}px, ${previewItem.image_offset_y ?? 0}px, 0)`,
-                }}
-              >
-                <Image
-                  src={previewItem.image}
-                  alt={previewItem.name}
-                  fill
-                  className="object-contain drop-shadow-lg"
-                  style={{
-                    objectPosition: previewItem.image_position || "center",
-                  }}
-                />
+            {/* Scrollable Content Body */}
+            <div className="overflow-y-auto flex-1 pr-1.5 -mr-1.5 my-3 space-y-3.5 overscroll-contain">
+              {/* Swipable Modal Media Showcase (Cover + Secondary Images/Videos) */}
+              <QuickViewMediaGallery
+                coverImage={previewItem.image}
+                productName={previewItem.name}
+                secondaryMedia={previewItem.media_gallery}
+                imageScale={previewItem.image_scale ?? 100}
+                imagePosition={previewItem.image_position || "center"}
+                imageOffsetX={previewItem.image_offset_x ?? 0}
+                imageOffsetY={previewItem.image_offset_y ?? 0}
+              />
+
+              {/* Title & Price Header */}
+              <div>
+                <h3 className="font-serif font-black text-lg sm:text-xl text-maroon mb-1">
+                  {previewItem.name}
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display font-black text-lg sm:text-xl text-maroon">
+                    PKR {previewItem.price}
+                  </span>
+                  {previewItem.originalPrice && (
+                    <span className="text-xs sm:text-sm text-maroon/40 line-through">
+                      PKR {previewItem.originalPrice}
+                    </span>
+                  )}
+                  <span className="ml-auto text-xs font-semibold text-rose bg-rose/10 px-2.5 py-0.5 rounded-full">
+                    ★ {previewItem.rating.toFixed(1)} ({previewItem.reviewsCount} reviews)
+                  </span>
+                </div>
+              </div>
+
+              {/* What's Included in this package: Shows admin description */}
+              <div className="bg-[#fdf5f6] p-3.5 sm:p-4 rounded-2xl border border-rose/15">
+                <span className="font-body text-xs font-bold uppercase tracking-wider text-maroon block mb-2">
+                  What&apos;s Included in this package:
+                </span>
+                {previewItem.highlight ? (
+                  <div className="space-y-1.5">
+                    {previewItem.highlight
+                      .split(/\r?\n/)
+                      .map((line) => line.trim())
+                      .filter(Boolean)
+                      .map((line, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose flex-shrink-0 mt-1.5" />
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                    Custom handcrafted arrangement with luxury wrappers and personalized wish card.
+                  </p>
+                )}
               </div>
             </div>
 
-            <h3 className="font-serif font-black text-xl text-maroon mb-2">
-              {previewItem.name}
-            </h3>
-            <p className="font-body text-xs sm:text-sm text-maroon/80 leading-relaxed mb-5">
-              {previewItem.highlight}
-            </p>
-
-            <div className="flex items-center justify-between pt-3 border-t border-rose/15">
-              <div>
-                <span className="block text-[9px] uppercase font-bold tracking-widest text-maroon/50">
-                  Total Price
-                </span>
-                <span className="font-display font-black text-xl text-maroon">
-                  PKR {previewItem.price}
-                </span>
-              </div>
-
+            {/* Sticky Action Footer */}
+            <div className="pt-3 border-t border-rose/15 flex-shrink-0">
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(previewItem.whatsappMessage)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-rose to-[#d43751] text-white px-6 py-2.5 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform hover:scale-105 active:scale-95"
+                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>Chat to Order</span>
+                <span>Chat to Order on WhatsApp</span>
               </a>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
+  );
+}
+
+{/* ── Subcomponent: ProductCard (Clean Editorial Lookbook Card for Photographic Backgrounds) ── */}
+function ProductCard({
+  product,
+  isLiked,
+  onToggleLike,
+  onPreview,
+  priority = false,
+}: {
+  product: CatalogProduct;
+  isLiked: boolean;
+  onToggleLike: () => void;
+  onPreview: () => void;
+  priority?: boolean;
+}) {
+  return (
+    <div onClick={onPreview} className="group relative w-full h-full rounded-[28px] sm:rounded-[32px] bg-white border border-rose/15 shadow-[0_10px_28px_rgba(107,21,53,0.06)] hover:shadow-[0_18px_42px_rgba(107,21,53,0.12)] hover:border-rose/30 transition-all duration-400 flex flex-col justify-between overflow-hidden cursor-pointer">
+      {/* ── Upper Showcase (Full-Bleed Photographic Display Window) ── */}
+      <div className="relative w-full h-[250px] sm:h-[260px] overflow-hidden rounded-t-[28px] sm:rounded-t-[32px] bg-[#f8e6e8]">
+        {/* Full-bleed Product Image with subtle cinematic hover zoom */}
+        <div
+          className="relative w-full h-full transition-transform duration-700 ease-out group-hover:scale-105"
+          style={{
+            transform: `scale(${(product.image_scale ?? 100) / 100}) translate3d(${product.image_offset_x ?? 0}px, ${product.image_offset_y ?? 0}px, 0)`,
+          }}
+        >
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 290px, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover"
+            style={{
+              objectPosition: product.image_position || "center",
+            }}
+            priority={priority}
+          />
+        </div>
+
+        {/* Top Scrim Gradient (Ensures badge & heart button readability on any photo background) */}
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/45 via-black/15 to-transparent z-10 pointer-events-none" />
+
+        {/* Bottom Feather Gradient (Smooth transition into pure white card body) */}
+        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white via-white/50 to-transparent z-10 pointer-events-none" />
+
+        {/* Badge & Heart Button */}
+        <div className="absolute top-3.5 inset-x-3.5 z-20 flex items-center justify-between pointer-events-none">
+          {product.badge ? (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-white/95 backdrop-blur-md text-maroon border border-white/60 shadow-sm">
+              <span>{product.badge}</span>
+            </span>
+          ) : (
+            <span />
+          )}
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleLike();
+            }}
+            className="pointer-events-auto w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-white/60 flex items-center justify-center text-maroon/70 hover:text-rose hover:bg-white shadow-sm transition-all active:scale-90 cursor-pointer"
+            aria-label="Save to favorites"
+          >
+            <Heart
+              className={`w-3.5 h-3.5 transition-colors ${
+                isLiked ? "fill-rose text-rose" : ""
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Quick Inspect Button on Hover */}
+        <div className="absolute bottom-2.5 inset-x-0 flex justify-center pointer-events-none z-20">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPreview();
+            }}
+            className="pointer-events-auto opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-maroon/90 hover:bg-maroon text-[#FFF4D0] text-[10px] font-bold tracking-wider uppercase backdrop-blur-md shadow-lg active:scale-95 cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Quick View</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Lower Product Details Card ── */}
+      <div className="p-4 sm:p-5 flex flex-col justify-between flex-1">
+        <div>
+          {/* Rating & Tag */}
+          <div className="flex items-center justify-between text-xs mb-1.5 font-body">
+            <span className="font-semibold text-[10px] uppercase tracking-wider text-rose">
+              {product.categoryTag}
+            </span>
+            <div className="flex items-center gap-1 text-amber-500 font-bold text-[11px]">
+              <Star className="w-3 h-3 fill-current" />
+              <span>{product.rating.toFixed(1)}</span>
+              <span className="text-maroon/40 font-normal">({product.reviewsCount})</span>
+            </div>
+          </div>
+
+          {/* Product Name */}
+          <h3 className="font-serif font-bold text-base sm:text-lg text-maroon group-hover:text-rose transition-colors duration-200 line-clamp-1 mb-1.5">
+            {product.name}
+          </h3>
+
+          {/* Highlight Description */}
+          <p className="font-body text-xs text-maroon/70 leading-relaxed line-clamp-2 mb-3">
+            {product.highlight}
+          </p>
+        </div>
+
+        {/* Price & Action Row */}
+        <div className="mt-2 pt-3 border-t border-rose/15 flex items-center justify-between gap-2">
+          <div>
+            <span className="block text-[9px] uppercase font-bold tracking-widest text-maroon/50">
+              Starting At
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-display font-black text-base sm:text-lg text-maroon">
+                PKR {product.price}
+              </span>
+              {product.originalPrice && (
+                <span className="text-xs text-maroon/40 line-through font-body">
+                  PKR {product.originalPrice}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(product.whatsappMessage)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white px-4 py-2.5 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all hover:scale-105 active:scale-95 group/btn"
+            aria-label={`Order ${product.name} on WhatsApp`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>Order</span>
+            <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }

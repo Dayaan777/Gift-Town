@@ -93,7 +93,6 @@ interface TreatItem {
   category: string;
   price: number;
   image: string;
-  emoji: string;
   image_scale?: number;
   image_position?: string;
   image_offset_y?: number;
@@ -125,7 +124,6 @@ const TREATS: TreatItem[] = [
     category: "Chocolates",
     price: 380,
     image: "/images/hamper-studio/items/item-snickers.png",
-    emoji: "🍫",
     slots: {
       "wicker-handle": {
         left: "35.0%",
@@ -149,7 +147,6 @@ const TREATS: TreatItem[] = [
     category: "Chocolates",
     price: 450,
     image: "/images/hamper-studio/items/item-dairy-milk-tall.png",
-    emoji: "🍫",
     slots: {
       "wicker-handle": {
         left: "50.0%",
@@ -173,7 +170,6 @@ const TREATS: TreatItem[] = [
     category: "Chocolates",
     price: 350,
     image: "/images/hamper-studio/items/item-kitkat-chunky.png",
-    emoji: "🍫",
     slots: {
       "wicker-handle": {
         left: "65.0%",
@@ -199,7 +195,6 @@ const TREATS: TreatItem[] = [
     category: "Chips & Snacks",
     price: 250,
     image: "/images/hamper-studio/items/item-lays-hangout.png",
-    emoji: "🥔",
     slots: {
       "wicker-handle": {
         left: "33.5%",
@@ -223,7 +218,6 @@ const TREATS: TreatItem[] = [
     category: "Chips & Snacks",
     price: 350,
     image: "/images/hamper-studio/items/item-lays-party.png",
-    emoji: "🥔",
     slots: {
       "wicker-handle": {
         left: "50.0%",
@@ -247,7 +241,6 @@ const TREATS: TreatItem[] = [
     category: "Chocolates",
     price: 300,
     image: "/images/hamper-studio/items/item-dairy-milk-square.png",
-    emoji: "🍫",
     slots: {
       "wicker-handle": {
         left: "66.5%",
@@ -369,8 +362,7 @@ export default function BuildSurpriseSection() {
                 category: dbT.category || "Chocolates",
                 price: Number(dbT.price) || 300,
                 image: dbT.image,
-                emoji: "🎁",
-                slots: defaultSlots,
+                            slots: defaultSlots,
                 image_scale: Number(dbT.image_scale) || 100,
                 image_position: dbT.image_position || "center",
                 image_offset_y: Number(dbT.image_offset_y) || 0,
@@ -449,7 +441,7 @@ export default function BuildSurpriseSection() {
 
     setFlyingItems((prev) => [...prev, newFly]);
 
-    // 3. After parabolic flight finishes (650ms), nestle treat, bump basket, and trigger sparkles
+    // 3. After snappy parabolic flight finishes (240ms), nestle treat, bump basket, and trigger sparkles
     setTimeout(() => {
       // Add or increment treat quantity (capped at 10)
       setQuantities((prev) => ({
@@ -475,8 +467,8 @@ export default function BuildSurpriseSection() {
       setSparkles((prev) => [...prev, ...newSparkles]);
       setTimeout(() => {
         setSparkles((prev) => prev.filter((sp) => !newSparkles.some((ns) => ns.id === sp.id)));
-      }, 700);
-    }, 650);
+      }, 400);
+    }, 240);
   };
 
   const incrementItem = (itemId: string, event?: React.MouseEvent) => {
@@ -537,8 +529,8 @@ export default function BuildSurpriseSection() {
     if (isCakeBasket) {
       const lines = [
         "Hi Gift Town! I would like to order the Heritage Round Cake Hamper:",
-        `🧺 Basket: ${activeBasket.name} (PKR ${activeBasket.basePrice.toLocaleString()})`,
-        "🎂 Occasion: Celebration Cake Setup",
+        `• Basket: ${activeBasket.name} (PKR ${activeBasket.basePrice.toLocaleString()})`,
+        "• Occasion: Celebration Cake Setup",
         "Please guide me with available customized cake flavors and delivery timing in Thatta/Makli!",
       ];
       return encodeURIComponent(lines.join("\n"));
@@ -546,14 +538,14 @@ export default function BuildSurpriseSection() {
 
     const lines = [
       "Hi Gift Town! I designed a custom gift hamper on your Live Hamper Studio:",
-      `🧺 Basket Base: ${activeBasket.name} (PKR ${activeBasket.basePrice.toLocaleString()})`,
-      `🍫 Packed Items (${totalPackedCount} items):`,
+      `• Basket Base: ${activeBasket.name} (PKR ${activeBasket.basePrice.toLocaleString()})`,
+      `• Packed Items (${totalPackedCount} items):`,
       ...packedTreats.map((item, idx) => {
         const qty = quantities[item.id] || 1;
         const lineTotal = item.price * qty;
         return `  ${idx + 1}. ${item.name} (x${qty}) - PKR ${lineTotal.toLocaleString()}`;
       }),
-      `💰 Total Estimated Price: PKR ${grandTotal.toLocaleString()}`,
+      `• Total Estimated Price: PKR ${grandTotal.toLocaleString()}`,
       "Please confirm item availability and delivery timing in Thatta/Makli!",
     ];
     return encodeURIComponent(lines.join("\n"));
@@ -567,8 +559,7 @@ export default function BuildSurpriseSection() {
 
         {/* ── Section Header ── */}
         <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/90 border border-rose/20 shadow-xs mb-4">
-            <Sparkles className="w-3.5 h-3.5 text-rose fill-rose" />
+          <div className="inline-flex items-center px-3.5 py-1 rounded-full bg-white/90 border border-rose/20 shadow-xs mb-4">
             <span className="text-xs font-bold uppercase tracking-wider text-maroon">
               Live Interactive Studio
             </span>
@@ -812,8 +803,7 @@ export default function BuildSurpriseSection() {
                     <p className="font-body text-xs text-maroon/70 leading-relaxed mb-3">
                       This round heritage hamper is handcrafted exclusively to hold custom decorated birthday & anniversary mini cakes.
                     </p>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose/10 text-rose font-bold text-[11px]">
-                      <Sparkles className="w-3 h-3" />
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-rose/10 text-rose font-bold text-[11px]">
                       <span>Custom Cake Included</span>
                     </span>
                   </div>
@@ -1127,13 +1117,13 @@ export default function BuildSurpriseSection() {
               "--end-y": `${fly.endY}px`,
               "--target-rotate": fly.targetRotate,
               "--target-scale": fly.targetScale,
-              animation: "flyArcX 650ms cubic-bezier(0.25, 0.9, 0.4, 1) forwards",
+              animation: "flyArcX 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
             } as React.CSSProperties
           }
         >
           <div
             style={{
-              animation: "flyArcY 650ms cubic-bezier(0.18, 0.89, 0.32, 1.15) forwards",
+              animation: "flyArcY 240ms cubic-bezier(0.16, 1, 0.3, 1.1) forwards",
             }}
           >
             <div className="relative w-24 h-32 filter drop-shadow-[0_12px_24px_rgba(226,64,92,0.35)]">
@@ -1169,82 +1159,6 @@ export default function BuildSurpriseSection() {
         />
       ))}
 
-      {/* Global Injected CSS for Parabolic Flight & Pop-In Physics */}
-      <style jsx global>{`
-        @keyframes flyArcX {
-          0% {
-            left: var(--start-x);
-            transform: translateX(-50%) scale(1.1) rotate(0deg);
-            opacity: 1;
-          }
-          75% {
-            opacity: 1;
-          }
-          100% {
-            left: var(--end-x);
-            transform: translateX(-50%) scale(var(--target-scale)) rotate(var(--target-rotate));
-            opacity: 0.95;
-          }
-        }
-
-        @keyframes flyArcY {
-          0% {
-            top: var(--start-y);
-          }
-          30% {
-            /* Rises upward first into an arc */
-            top: calc(var(--start-y) - 65px);
-          }
-          100% {
-            top: var(--end-y);
-            transform: translateY(-50%);
-          }
-        }
-
-        @keyframes basketBump {
-          0% {
-            transform: scale(1);
-          }
-          35% {
-            transform: scale(1.025) translateY(2px);
-          }
-          70% {
-            transform: scale(0.99) translateY(-1px);
-          }
-          100% {
-            transform: scale(1) translateY(0);
-          }
-        }
-
-        .animate-basketBump {
-          animation: basketBump 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        @keyframes sparklePop {
-          0% {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.2);
-          }
-        }
-
-        @keyframes popIn {
-          0% {
-            opacity: 0;
-            transform: translate(-50%, -80%) scale(0.4);
-          }
-          70% {
-            transform: translate(-50%, -48%) scale(1.08);
-          }
-          100% {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-          }
-        }
-      `}</style>
-    </section>
+      </section>
   );
 }

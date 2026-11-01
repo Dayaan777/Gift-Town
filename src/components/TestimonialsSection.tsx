@@ -34,13 +34,12 @@ export default function TestimonialsSection() {
   ];
 
   return (
-    <section className="relative py-16 sm:py-24 bg-[#faedf0]/40 overflow-hidden">
+    <section className="relative py-16 sm:py-24 bg-[#fce3e0] overflow-hidden">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           <StickerBadge variant="gold" rotate="2" size="sm">
-            <Heart className="w-3 h-3 fill-amber-500 text-amber-500" />
             <span>Customer Love</span>
           </StickerBadge>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-[#22252a] tracking-tight">

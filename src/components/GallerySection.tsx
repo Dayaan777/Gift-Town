@@ -15,6 +15,9 @@ import {
   X,
   Volume2,
   VolumeX,
+  MapPin,
+  Truck,
+  Sparkles,
 } from "lucide-react";
 
 // Inline Instagram Icon for 100% authentic branding
@@ -31,15 +34,15 @@ function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-// Real highlights from screenshot
+// Real highlights from boutique portfolio
 const HIGHLIGHTS = [
-  { id: "h1", name: "bouquet 🥀🍫", emoji: "🥀🍫" },
-  { id: "h2", name: "Fresh flowers", emoji: "🌸" },
-  { id: "h3", name: "flower bouquet", emoji: "💐" },
-  { id: "h4", name: "Bouquets", emoji: "🎀" },
-  { id: "h5", name: "orders", emoji: "📦" },
-  { id: "h6", name: "baskets", emoji: "🧺" },
-  { id: "h7", name: "money bouq...", emoji: "💵" },
+  { id: "h1", name: "Bouquets & Treats" },
+  { id: "h2", name: "Fresh Flowers" },
+  { id: "h3", name: "Flower Bouquets" },
+  { id: "h4", name: "Signature Bouquets" },
+  { id: "h5", name: "Custom Orders" },
+  { id: "h6", name: "Gift Baskets" },
+  { id: "h7", name: "Money Bouquets" },
 ];
 
 // Real Posts from user's provided images
@@ -100,7 +103,7 @@ const REELS_DATA = [
     id: "reel-1",
     video: "/images/insta/reels/reel-1.mp4",
     poster: "/images/insta/reels/posters/poster-1.jpg",
-    caption: "Candy Bouquet 🍬 Nationwide Delivery",
+    caption: "Candy Bouquet • Nationwide Delivery",
     views: "22.4k",
     likes: "740",
     comments: "58",
@@ -118,7 +121,7 @@ const REELS_DATA = [
     id: "reel-3",
     video: "/images/insta/reels/reel-3.mp4",
     poster: "/images/insta/reels/posters/poster-3.jpg",
-    caption: "Snack Bouquet 💐 All Over Pakistan",
+    caption: "Snack Bouquet • All Over Pakistan",
     views: "19.8k",
     likes: "615",
     comments: "42",
@@ -127,7 +130,7 @@ const REELS_DATA = [
     id: "reel-4",
     video: "/images/insta/reels/reel-4.mp4",
     poster: "/images/insta/reels/posters/poster-4.jpg",
-    caption: "Surprise Cake Box 🫶🏻 Thatta & Makli",
+    caption: "Surprise Cake Box • Thatta & Makli",
     views: "28.6k",
     likes: "830",
     comments: "64",
@@ -136,7 +139,7 @@ const REELS_DATA = [
     id: "reel-5",
     video: "/images/insta/reels/reel-5.mp4",
     poster: "/images/insta/reels/posters/poster-5.jpg",
-    caption: "Tag Him / Her 💗 Handmade Bouquet",
+    caption: "Handmade Bouquet • Tag Him / Her",
     views: "41.2k",
     likes: "1.2k",
     comments: "112",
@@ -145,7 +148,7 @@ const REELS_DATA = [
     id: "reel-6",
     video: "/images/insta/reels/reel-6.mp4",
     poster: "/images/insta/reels/posters/poster-6.jpg",
-    caption: "Acrylic Keepsake Gift Box 🫠💗",
+    caption: "Acrylic Keepsake Gift Box",
     views: "26.7k",
     likes: "790",
     comments: "53",
@@ -305,18 +308,24 @@ export default function GallerySection() {
 
                     {/* Bio Snippet */}
                     <div className="text-xs sm:text-[13px] text-maroon/80 space-y-1 font-body">
-                      <div className="font-bold text-maroon flex items-center justify-center sm:justify-start gap-1">
-                        <span>Gift town</span> <span>🎁</span>
+                      <div className="font-bold text-maroon flex items-center justify-center sm:justify-start gap-1.5">
+                        <span>Gift Town</span>
                         <span className="text-rose font-medium text-[11px] ml-1 px-1.5 py-0.5 rounded-md bg-rose/10">
-                          Gift Shop
+                          Boutique Gift Shop
                         </span>
                       </div>
-                      <p>📍 Thatta / Makli</p>
-                      <p>🚚 Delivery available all over PK • Advance Payment Only</p>
-                      <p className="text-maroon/70">
-                        🎂 Birthday Packages | Midnight Surprises | Bouquet | Baskets | Eid Gifts | Wedding
+                      <p className="flex items-center justify-center sm:justify-start gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-rose shrink-0" />
+                        <span>Thatta &amp; Makli</span>
                       </p>
-                      <p className="text-maroon/50 text-[11px]">makli thatta Pakistan, Thatta 73130</p>
+                      <p className="flex items-center justify-center sm:justify-start gap-1.5">
+                        <Truck className="w-3.5 h-3.5 text-rose shrink-0" />
+                        <span>Nationwide Delivery across Pakistan • Advance Payment</span>
+                      </p>
+                      <p className="text-maroon/70">
+                        Birthday Packages • Midnight Surprises • Floral Bouquets • Baskets • Eid Gifts • Wedding
+                      </p>
+                      <p className="text-maroon/50 text-[11px]">Makli, Thatta, Sindh, Pakistan 73130</p>
                     </div>
                   </div>
 
@@ -339,8 +348,8 @@ export default function GallerySection() {
                     >
                       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] bg-rose/25 group-hover:bg-rose transition-colors">
                         <div className="w-full h-full rounded-full bg-white p-[2px] flex items-center justify-center">
-                          <div className="w-full h-full rounded-full bg-[#faedf0] group-hover:bg-[#f6dfe4] transition-colors flex items-center justify-center text-lg sm:text-xl shadow-inner">
-                            {h.emoji}
+                          <div className="w-full h-full rounded-full bg-[#faedf0] group-hover:bg-[#f6dfe4] transition-colors flex items-center justify-center text-rose shadow-inner">
+                            <Sparkles className="w-5 h-5" />
                           </div>
                         </div>
                       </div>

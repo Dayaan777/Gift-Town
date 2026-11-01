@@ -8,6 +8,7 @@ import {
   KeyRound,
   ShieldCheck,
   Package,
+  PackageOpen,
   ArrowRight,
   Sparkles,
   ShoppingBag,
@@ -38,9 +39,37 @@ import {
   Compass,
   Crosshair,
   ZoomIn,
+  Gift,
+  Save,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ImageUploader from "@/components/admin/ImageUploader";
+import MultiMediaUploader, { MediaItem } from "@/components/admin/MultiMediaUploader";
+import { DEFAULT_PACKAGES_LIST } from "@/components/PackagesShowcase";
+
+interface AllProductRow {
+  id: string;
+  name: string;
+  category_tag?: string;
+  category: string;
+  badge?: string;
+  price: string;
+  original_price?: string;
+  rating?: number;
+  reviews_count?: number;
+  highlight?: string;
+  image: string;
+  whatsapp_message?: string;
+  media_gallery?: MediaItem[];
+  is_bestseller: boolean;
+  is_featured: boolean;
+  is_active: boolean;
+  display_order: number;
+  image_scale?: number;
+  image_position?: string;
+  image_offset_y?: number;
+  image_offset_x?: number;
+}
 
 interface BestsellerRow {
   id: string;
@@ -55,6 +84,7 @@ interface BestsellerRow {
   highlight: string;
   image: string;
   whatsapp_message?: string;
+  media_gallery?: MediaItem[];
   is_active: boolean;
   display_order: number;
   image_scale?: number;
@@ -76,6 +106,7 @@ interface FeaturedProductRow {
   highlight: string;
   image: string;
   whatsapp_message?: string;
+  media_gallery?: MediaItem[];
   is_active: boolean;
   display_order: number;
   image_scale?: number;
@@ -83,6 +114,30 @@ interface FeaturedProductRow {
   image_offset_y?: number;
   image_offset_x?: number;
 }
+
+export interface PackageItemRow {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  image: string;
+  category?: string;
+}
+
+export interface WeddingPackageRow {
+  id: string;
+  title: string;
+  category_tag: string;
+  price: number;
+  original_price?: number;
+  badge: string;
+  highlight: string;
+  description: string;
+  images: string[];
+  items: PackageItemRow[];
+}
+
+const DEFAULT_WEDDING_PACKAGE: WeddingPackageRow = DEFAULT_PACKAGES_LIST[0] as unknown as WeddingPackageRow;
 
 interface HamperItemRow {
   id: string;
@@ -109,10 +164,31 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Tabs: "bestsellers" | "featured-products" | "custom-hamper" | "image-sizing"
+  // Tabs: "all-products" | "bestsellers" | "featured-products" | "custom-hamper" | "image-sizing"
   const [activeTab, setActiveTab] = useState<
-    "bestsellers" | "featured-products" | "custom-hamper" | "image-sizing"
-  >("bestsellers");
+    "all-products" | "bestsellers" | "featured-products" | "custom-hamper" | "image-sizing"
+  >("all-products");
+  const [allProducts, setAllProducts] = useState<AllProductRow[]>([]);
+  const [allProductsSearch, setAllProductsSearch] = useState("");
+  const [allProductsCategoryFilter, setAllProductsCategoryFilter] = useState("all");
+  const [editingAllProduct, setEditingAllProduct] = useState<AllProductRow | null>(null);
+  const [isAddingAllProduct, setIsAddingAllProduct] = useState(false);
+  const [newAllProduct, setNewAllProduct] = useState<Partial<AllProductRow>>({
+    name: "",
+    category_tag: "Signature Creation",
+    category: "bouquets",
+    badge: "Trending",
+    price: "3,500",
+    original_price: "",
+    highlight: "",
+    image: "",
+    whatsapp_message: "",
+    media_gallery: [],
+    is_bestseller: false,
+    is_featured: false,
+    is_active: true,
+  });
+
   const [bestsellers, setBestsellers] = useState<BestsellerRow[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProductRow[]>([]);
   const [hamperItems, setHamperItems] = useState<HamperItemRow[]>([]);
@@ -121,8 +197,8 @@ export default function AdminPage() {
 
   // Visual Studio Sizing State
   const [sizingSection, setSizingSection] = useState<
-    "bestsellers" | "featured-products" | "custom-hamper"
-  >("bestsellers");
+    "all-products" | "bestsellers" | "featured-products" | "custom-hamper"
+  >("all-products");
   const [sizingSearch, setSizingSearch] = useState("");
   const [showFramingGuides, setShowFramingGuides] = useState(true);
 
@@ -135,6 +211,30 @@ export default function AdminPage() {
 
   const [editingHamperItem, setEditingHamperItem] = useState<HamperItemRow | null>(null);
   const [isAddingHamperItem, setIsAddingHamperItem] = useState(false);
+  const [weddingPackages, setWeddingPackages] = useState<WeddingPackageRow[]>(
+    DEFAULT_PACKAGES_LIST as unknown as WeddingPackageRow[]
+  );
+  const [selectedPackageId, setSelectedPackageId] = useState<string>("pkg-baat-pakki");
+
+  const weddingPackage =
+    weddingPackages.find((p) => p.id === selectedPackageId) ||
+    weddingPackages[0] ||
+    (DEFAULT_PACKAGES_LIST[0] as unknown as WeddingPackageRow);
+
+  const setWeddingPackage = (
+    updater: WeddingPackageRow | ((prev: WeddingPackageRow) => WeddingPackageRow)
+  ) => {
+    setWeddingPackages((prevList) =>
+      prevList.map((p) => {
+        if (p.id === selectedPackageId) {
+          return typeof updater === "function" ? updater(p) : updater;
+        }
+        return p;
+      })
+    );
+  };
+  const [editingWeddingItem, setEditingWeddingItem] = useState<PackageItemRow | null>(null);
+  const [isSavingWeddingPkg, setIsSavingWeddingPkg] = useState(false);
 
   // Filter for Custom Hamper
   const [hamperFilter, setHamperFilter] = useState<"all" | "base" | "product">("all");
@@ -152,6 +252,7 @@ export default function AdminPage() {
     highlight: "",
     image: "",
     whatsapp_message: "",
+    media_gallery: [],
   });
 
   const [newFeaturedProduct, setNewFeaturedProduct] = useState<Partial<FeaturedProductRow>>({
@@ -164,6 +265,7 @@ export default function AdminPage() {
     highlight: "",
     image: "",
     whatsapp_message: "",
+    media_gallery: [],
   });
 
   const [newHamperItem, setNewHamperItem] = useState<Partial<HamperItemRow>>({
@@ -231,6 +333,16 @@ export default function AdminPage() {
   const fetchDashboardData = async () => {
     setIsLoadingData(true);
     try {
+      // 0. Fetch All Products
+      const { data: apData, error: apErr } = await supabase
+        .from("all_products")
+        .select("*")
+        .order("display_order", { ascending: true });
+
+      if (!apErr && apData) {
+        setAllProducts(apData as AllProductRow[]);
+      }
+
       // 1. Fetch Featured Best Sellers
       const { data: bsData, error: bsErr } = await supabase
         .from("featured_bestsellers")
@@ -260,6 +372,33 @@ export default function AdminPage() {
       if (!hErr && hData) {
         setHamperItems(hData as HamperItemRow[]);
       }
+
+      // 3. Fetch All Celebration Packages
+      try {
+        const { data: wpData, error: wpErr } = await supabase
+          .from("wedding_packages")
+          .select("*")
+          .order("price", { ascending: false });
+
+        if (!wpErr && wpData && wpData.length > 0) {
+          setWeddingPackages(
+            wpData.map((d: any) => ({
+              id: d.id,
+              title: d.title || "",
+              category_tag: d.category_tag || "Celebration Suite",
+              price: Number(d.price) || 0,
+              original_price: d.original_price ? Number(d.original_price) : undefined,
+              badge: d.badge || "Signature Package",
+              highlight: d.highlight || "",
+              description: d.description || "",
+              images: Array.isArray(d.images) && d.images.length > 0 ? d.images : ["/images/packages/engagement-baat-pakki/baat-pakki-4.jpeg"],
+              items: Array.isArray(d.items) ? d.items : [],
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Could not fetch wedding_packages rows:", err);
+      }
     } catch (err) {
       console.error("Error fetching Supabase data:", err);
     } finally {
@@ -270,6 +409,305 @@ export default function AdminPage() {
   const showNotification = (msg: string) => {
     setSaveSuccessMsg(msg);
     setTimeout(() => setSaveSuccessMsg(""), 3500);
+  };
+
+  // ═════════════════════════════════════════════════════════════════
+  // ALL PRODUCTS CRUD & FEATURE TOGGLES
+  // ═════════════════════════════════════════════════════════════════
+  const filteredAllProducts = allProducts.filter((p) => {
+    if (allProductsCategoryFilter !== "all" && p.category !== allProductsCategoryFilter) {
+      return false;
+    }
+    if (!allProductsSearch.trim()) return true;
+    const q = allProductsSearch.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      (p.category_tag && p.category_tag.toLowerCase().includes(q)) ||
+      (p.highlight && p.highlight.toLowerCase().includes(q))
+    );
+  });
+
+  const handleToggleProductBestseller = async (product: AllProductRow) => {
+    const nextState = !product.is_bestseller;
+    setAllProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, is_bestseller: nextState } : p))
+    );
+    await supabase.from("all_products").update({ is_bestseller: nextState }).eq("id", product.id);
+
+    if (nextState) {
+      const itemToAdd: BestsellerRow = {
+        id: product.id,
+        name: product.name,
+        category_tag: product.category_tag || "Signature Gift",
+        category: product.category || "bouquets",
+        badge: product.badge || "Bestseller",
+        price: product.price,
+        original_price: product.original_price,
+        rating: product.rating || 5.0,
+        reviews_count: product.reviews_count || 45,
+        highlight: product.highlight || "Custom handcrafted arrangement with luxury wrappers and personalized wish card.",
+        image: product.image,
+        media_gallery: product.media_gallery || [],
+        whatsapp_message: product.whatsapp_message || `Hi Gift Town! I want to order "${product.name}".`,
+        is_active: product.is_active !== false,
+        display_order: bestsellers.length + 1,
+        image_scale: product.image_scale,
+        image_position: product.image_position,
+        image_offset_y: product.image_offset_y,
+        image_offset_x: product.image_offset_x,
+      };
+      await supabase.from("featured_bestsellers").upsert([itemToAdd]);
+      setBestsellers((prev) => {
+        const idx = prev.findIndex((b) => b.id === product.id);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = itemToAdd;
+          return updated;
+        }
+        return [...prev, itemToAdd];
+      });
+      showNotification(`Added "${product.name}" to Featured Best Sellers!`);
+    } else {
+      await supabase.from("featured_bestsellers").delete().eq("id", product.id);
+      setBestsellers((prev) => prev.filter((b) => b.id !== product.id));
+      showNotification(`Removed "${product.name}" from Featured Best Sellers (preserved in All Products)`);
+    }
+  };
+
+  const handleToggleProductFeatured = async (product: AllProductRow) => {
+    const nextState = !product.is_featured;
+    setAllProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, is_featured: nextState } : p))
+    );
+    await supabase.from("all_products").update({ is_featured: nextState }).eq("id", product.id);
+
+    if (nextState) {
+      const itemToAdd: FeaturedProductRow = {
+        id: product.id,
+        name: product.name,
+        category_tag: product.category_tag || "Boutique Creation",
+        category: (product.category as any) || "bouquets",
+        badge: product.badge || "Featured",
+        price: product.price,
+        original_price: product.original_price,
+        rating: product.rating || 5.0,
+        reviews_count: product.reviews_count || 45,
+        highlight: product.highlight || "Custom handcrafted arrangement with luxury wrappers and personalized wish card.",
+        image: product.image,
+        media_gallery: product.media_gallery || [],
+        whatsapp_message: product.whatsapp_message || `Hi Gift Town! I want to order "${product.name}".`,
+        is_active: product.is_active !== false,
+        display_order: featuredProducts.length + 1,
+        image_scale: product.image_scale,
+        image_position: product.image_position,
+        image_offset_y: product.image_offset_y,
+        image_offset_x: product.image_offset_x,
+      };
+      await supabase.from("featured_products").upsert([itemToAdd]);
+      setFeaturedProducts((prev) => {
+        const idx = prev.findIndex((p) => p.id === product.id);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = itemToAdd;
+          return updated;
+        }
+        return [...prev, itemToAdd];
+      });
+      showNotification(`Added "${product.name}" to Featured Products!`);
+    } else {
+      await supabase.from("featured_products").delete().eq("id", product.id);
+      setFeaturedProducts((prev) => prev.filter((p) => p.id !== product.id));
+      showNotification(`Removed "${product.name}" from Featured Products (preserved in All Products)`);
+    }
+  };
+
+  const toggleAllProductActive = async (item: AllProductRow) => {
+    const nextState = !item.is_active;
+    setAllProducts((prev) =>
+      prev.map((p) => (p.id === item.id ? { ...p, is_active: nextState } : p))
+    );
+    await supabase.from("all_products").update({ is_active: nextState }).eq("id", item.id);
+    if (item.is_bestseller) {
+      await supabase.from("featured_bestsellers").update({ is_active: nextState }).eq("id", item.id);
+      setBestsellers((prev) => prev.map((b) => (b.id === item.id ? { ...b, is_active: nextState } : b)));
+    }
+    if (item.is_featured) {
+      await supabase.from("featured_products").update({ is_active: nextState }).eq("id", item.id);
+      setFeaturedProducts((prev) => prev.map((f) => (f.id === item.id ? { ...f, is_active: nextState } : f)));
+    }
+    showNotification(`Updated visibility for "${item.name}"`);
+  };
+
+  const handleDeleteAllProduct = async (id: string, name: string) => {
+    if (!confirm(`Permanently delete "${name}" from All Products? This will remove it from the entire store.`)) {
+      return;
+    }
+
+    setAllProducts((prev) => prev.filter((p) => p.id !== id));
+    setBestsellers((prev) => prev.filter((b) => b.id !== id));
+    setFeaturedProducts((prev) => prev.filter((f) => f.id !== id));
+
+    await Promise.all([
+      supabase.from("all_products").delete().eq("id", id),
+      supabase.from("featured_bestsellers").delete().eq("id", id),
+      supabase.from("featured_products").delete().eq("id", id),
+    ]);
+
+    showNotification(`Permanently deleted "${name}" from All Products`);
+  };
+
+  const handleCreateAllProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAllProduct.name || !newAllProduct.price) {
+      alert("Please provide product name and price");
+      return;
+    }
+
+    const id = "prod-" + Date.now().toString().slice(-6);
+    const itemToAdd: AllProductRow = {
+      id,
+      name: newAllProduct.name,
+      category_tag: newAllProduct.category_tag || "Signature Gift",
+      category: newAllProduct.category || "bouquets",
+      badge: newAllProduct.badge || "Trending",
+      price: newAllProduct.price,
+      original_price: newAllProduct.original_price || undefined,
+      rating: 5.0,
+      reviews_count: 40,
+      highlight:
+        newAllProduct.highlight ||
+        "Custom handcrafted arrangement with luxury wrappers and personalized wish card.",
+      image: newAllProduct.image || "/images/products/heart-money-lights-bouquet.png",
+      media_gallery: newAllProduct.media_gallery || [],
+      whatsapp_message:
+        newAllProduct.whatsapp_message ||
+        `Hi Gift Town! I want to order '${newAllProduct.name}'.`,
+      is_bestseller: !!newAllProduct.is_bestseller,
+      is_featured: !!newAllProduct.is_featured,
+      is_active: true,
+      display_order: allProducts.length + 1,
+    };
+
+    setAllProducts((prev) => [...prev, itemToAdd]);
+    setIsAddingAllProduct(false);
+
+    const { error } = await supabase.from("all_products").insert([itemToAdd]);
+
+    if (!error) {
+      if (itemToAdd.is_bestseller) {
+        await supabase.from("featured_bestsellers").insert([{
+          ...itemToAdd,
+          category: itemToAdd.category || "bouquets",
+        }]);
+        setBestsellers((prev) => [...prev, itemToAdd as unknown as BestsellerRow]);
+      }
+      if (itemToAdd.is_featured) {
+        await supabase.from("featured_products").insert([{
+          ...itemToAdd,
+          category: (itemToAdd.category as any) || "bouquets",
+        }]);
+        setFeaturedProducts((prev) => [...prev, itemToAdd as unknown as FeaturedProductRow]);
+      }
+
+      showNotification(`Added "${itemToAdd.name}" to All Products!`);
+      setNewAllProduct({
+        name: "",
+        category_tag: "Signature Bouquet",
+        category: "bouquets",
+        badge: "Trending",
+        price: "4,500",
+        original_price: "",
+        highlight: "",
+        image: "",
+        whatsapp_message: "",
+        media_gallery: [],
+        is_bestseller: false,
+        is_featured: false,
+        is_active: true,
+      });
+    } else {
+      console.error(error);
+      alert("Failed to add product: " + error.message);
+      fetchDashboardData();
+    }
+  };
+
+  const handleSaveAllProductEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAllProduct) return;
+
+    setAllProducts((prev) =>
+      prev.map((p) => (p.id === editingAllProduct.id ? editingAllProduct : p))
+    );
+
+    const { error } = await supabase
+      .from("all_products")
+      .update({
+        name: editingAllProduct.name,
+        price: editingAllProduct.price,
+        original_price: editingAllProduct.original_price,
+        badge: editingAllProduct.badge,
+        category: editingAllProduct.category,
+        category_tag: editingAllProduct.category_tag,
+        highlight: editingAllProduct.highlight,
+        image: editingAllProduct.image,
+        media_gallery: editingAllProduct.media_gallery || [],
+        whatsapp_message: editingAllProduct.whatsapp_message,
+        is_bestseller: editingAllProduct.is_bestseller,
+        is_featured: editingAllProduct.is_featured,
+      })
+      .eq("id", editingAllProduct.id);
+
+    // Sync to featured_bestsellers
+    if (editingAllProduct.is_bestseller) {
+      await supabase.from("featured_bestsellers").upsert([{
+        id: editingAllProduct.id,
+        name: editingAllProduct.name,
+        price: editingAllProduct.price,
+        original_price: editingAllProduct.original_price,
+        badge: editingAllProduct.badge,
+        category: editingAllProduct.category,
+        category_tag: editingAllProduct.category_tag,
+        highlight: editingAllProduct.highlight,
+        image: editingAllProduct.image,
+        media_gallery: editingAllProduct.media_gallery || [],
+        whatsapp_message: editingAllProduct.whatsapp_message,
+        is_active: editingAllProduct.is_active,
+        display_order: editingAllProduct.display_order,
+      }]);
+    } else {
+      await supabase.from("featured_bestsellers").delete().eq("id", editingAllProduct.id);
+      setBestsellers((prev) => prev.filter((b) => b.id !== editingAllProduct.id));
+    }
+
+    // Sync to featured_products
+    if (editingAllProduct.is_featured) {
+      await supabase.from("featured_products").upsert([{
+        id: editingAllProduct.id,
+        name: editingAllProduct.name,
+        price: editingAllProduct.price,
+        original_price: editingAllProduct.original_price,
+        badge: editingAllProduct.badge,
+        category: editingAllProduct.category as any,
+        category_tag: editingAllProduct.category_tag,
+        highlight: editingAllProduct.highlight,
+        image: editingAllProduct.image,
+        media_gallery: editingAllProduct.media_gallery || [],
+        whatsapp_message: editingAllProduct.whatsapp_message,
+        is_active: editingAllProduct.is_active,
+        display_order: editingAllProduct.display_order,
+      }]);
+    } else {
+      await supabase.from("featured_products").delete().eq("id", editingAllProduct.id);
+      setFeaturedProducts((prev) => prev.filter((f) => f.id !== editingAllProduct.id));
+    }
+
+    if (!error) {
+      showNotification(`Saved changes for "${editingAllProduct.name}"!`);
+      setEditingAllProduct(null);
+    } else {
+      alert("Failed to save changes: " + error.message);
+    }
   };
 
   // ═════════════════════════════════════════════════════════════════
@@ -309,6 +747,7 @@ export default function AdminPage() {
         newBestseller.highlight ||
         "Custom handcrafted arrangement with luxury wrappers and personalized wish card.",
       image: newBestseller.image || "/images/products/heart-money-lights-bouquet.png",
+      media_gallery: newBestseller.media_gallery || [],
       whatsapp_message:
         newBestseller.whatsapp_message ||
         `Hi Gift Town! I want to order the '${newBestseller.name}'.`,
@@ -332,6 +771,7 @@ export default function AdminPage() {
         highlight: "",
         image: "",
         whatsapp_message: "",
+        media_gallery: [],
       });
     } else {
       console.error(error);
@@ -358,6 +798,7 @@ export default function AdminPage() {
         category_tag: editingBestseller.category_tag,
         highlight: editingBestseller.highlight,
         image: editingBestseller.image,
+        media_gallery: editingBestseller.media_gallery || [],
         whatsapp_message: editingBestseller.whatsapp_message,
       })
       .eq("id", editingBestseller.id);
@@ -371,14 +812,17 @@ export default function AdminPage() {
   };
 
   const handleDeleteBestseller = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}" from Featured Best Sellers?`)) {
+    if (!confirm(`Remove "${name}" from Featured Best Sellers? It will remain available in All Products.`)) {
       return;
     }
 
     setBestsellers((prev) => prev.filter((b) => b.id !== id));
     const { error } = await supabase.from("featured_bestsellers").delete().eq("id", id);
+    await supabase.from("all_products").update({ is_bestseller: false }).eq("id", id);
+    setAllProducts((prev) => prev.map((p) => (p.id === id ? { ...p, is_bestseller: false } : p)));
+
     if (!error) {
-      showNotification(`Deleted "${name}"`);
+      showNotification(`Removed "${name}" from Featured Best Sellers (preserved in All Products)`);
     } else {
       alert("Failed to delete: " + error.message);
       fetchDashboardData();
@@ -422,6 +866,7 @@ export default function AdminPage() {
         newFeaturedProduct.highlight ||
         "Custom handcrafted arrangement designed to spark unforgettable moments.",
       image: newFeaturedProduct.image || "/images/products/heart-money-lights-bouquet.png",
+      media_gallery: newFeaturedProduct.media_gallery || [],
       whatsapp_message:
         newFeaturedProduct.whatsapp_message ||
         `Hi Gift Town! I want to order the '${newFeaturedProduct.name}'.`,
@@ -445,6 +890,7 @@ export default function AdminPage() {
         highlight: "",
         image: "",
         whatsapp_message: "",
+        media_gallery: [],
       });
     } else {
       console.error(error);
@@ -472,6 +918,7 @@ export default function AdminPage() {
         category_tag: editingFeaturedProduct.category_tag,
         highlight: editingFeaturedProduct.highlight,
         image: editingFeaturedProduct.image,
+        media_gallery: editingFeaturedProduct.media_gallery || [],
         whatsapp_message: editingFeaturedProduct.whatsapp_message,
       })
       .eq("id", editingFeaturedProduct.id);
@@ -485,14 +932,17 @@ export default function AdminPage() {
   };
 
   const handleDeleteFeaturedProduct = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}" from Featured Products?`)) {
+    if (!confirm(`Remove "${name}" from Featured Products? It will remain available in All Products.`)) {
       return;
     }
 
     setFeaturedProducts((prev) => prev.filter((p) => p.id !== id));
     const { error } = await supabase.from("featured_products").delete().eq("id", id);
+    await supabase.from("all_products").update({ is_featured: false }).eq("id", id);
+    setAllProducts((prev) => prev.map((p) => (p.id === id ? { ...p, is_featured: false } : p)));
+
     if (!error) {
-      showNotification(`Deleted "${name}"`);
+      showNotification(`Removed "${name}" from Featured Products (preserved in All Products)`);
     } else {
       alert("Failed to delete: " + error.message);
       fetchDashboardData();
@@ -624,10 +1074,103 @@ export default function AdminPage() {
   };
 
   // ═════════════════════════════════════════════════════════════════
+  // WEDDING PACKAGE (BAAT PAKKI) & INDIVIDUAL ITEMS CRUD
+  // ═════════════════════════════════════════════════════════════════
+  const handleSaveWeddingPackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!weddingPackage) return;
+    setIsSavingWeddingPkg(true);
+
+    try {
+      const { error } = await supabase
+        .from("wedding_packages")
+        .update({
+          title: weddingPackage.title,
+          category_tag: weddingPackage.category_tag,
+          price: Number(weddingPackage.price),
+          original_price: weddingPackage.original_price ? Number(weddingPackage.original_price) : null,
+          badge: weddingPackage.badge,
+          highlight: weddingPackage.highlight,
+          description: weddingPackage.description,
+          items: weddingPackage.items,
+        })
+        .eq("id", weddingPackage.id);
+
+      if (!error) {
+        showNotification(`Saved "${weddingPackage.title}" & individual item prices!`);
+      } else {
+        alert("Failed to save wedding package: " + error.message);
+      }
+    } catch (err: any) {
+      alert("Error saving: " + err.message);
+    } finally {
+      setIsSavingWeddingPkg(false);
+    }
+  };
+
+    const handleSaveWeddingItemEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWeddingItem || !weddingPackage) return;
+
+    const updatedItems = weddingPackage.items.map((it) =>
+      it.id === editingWeddingItem.id ? editingWeddingItem : it
+    );
+
+    const updatedPkg = { ...weddingPackage, items: updatedItems };
+    setWeddingPackage(updatedPkg);
+
+    try {
+      const { error } = await supabase
+        .from("wedding_packages")
+        .update({ items: updatedItems })
+        .eq("id", weddingPackage.id);
+
+      if (!error) {
+        showNotification(`Saved "${editingWeddingItem.name}" live to website!`);
+        setEditingWeddingItem(null);
+      } else {
+        alert("Failed to save piece: " + error.message);
+      }
+    } catch (err: any) {
+      alert("Error saving piece: " + err.message);
+    }
+  };
+
+  const handleQuickItemPriceChange = async (itemId: string, newPrice: number) => {
+    if (!weddingPackage) return;
+    const updatedItems = weddingPackage.items.map((it) =>
+      it.id === itemId ? { ...it, price: newPrice } : it
+    );
+    setWeddingPackage({ ...weddingPackage, items: updatedItems });
+
+    try {
+      const { error } = await supabase
+        .from("wedding_packages")
+        .update({ items: updatedItems })
+        .eq("id", weddingPackage.id);
+      if (!error) {
+        showNotification("Price updated live!");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateWeddingItem = (itemId: string, field: keyof PackageItemRow, val: any) => {
+    if (!weddingPackage) return;
+    setWeddingPackage({
+      ...weddingPackage,
+      items: weddingPackage.items.map((it) =>
+        it.id === itemId ? { ...it, [field]: field === "price" ? (val === "" ? 0 : Number(val)) : val } : it
+      ),
+    });
+  };
+
+  // ═════════════════════════════════════════════════════════════════
   // VISUAL STUDIO / IMAGE SIZING & FRAMING HANDLER
   // ═════════════════════════════════════════════════════════════════
   const handleUpdateImageSizing = async (
-    section: "bestsellers" | "featured-products" | "custom-hamper",
+    section: "all-products" | "bestsellers" | "featured-products" | "custom-hamper",
     id: string,
     updates: {
       image_scale?: number;
@@ -636,16 +1179,25 @@ export default function AdminPage() {
       image_offset_x?: number;
     }
   ) => {
-    if (section === "bestsellers") {
+    if (section === "all-products") {
+      setAllProducts((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+      );
+      await supabase.from("all_products").update(updates).eq("id", id);
+      await supabase.from("featured_bestsellers").update(updates).eq("id", id);
+      await supabase.from("featured_products").update(updates).eq("id", id);
+    } else if (section === "bestsellers") {
       setBestsellers((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
       );
       await supabase.from("featured_bestsellers").update(updates).eq("id", id);
+      await supabase.from("all_products").update(updates).eq("id", id);
     } else if (section === "featured-products") {
       setFeaturedProducts((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
       );
       await supabase.from("featured_products").update(updates).eq("id", id);
+      await supabase.from("all_products").update(updates).eq("id", id);
     } else if (section === "custom-hamper") {
       setHamperItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
@@ -863,6 +1415,22 @@ export default function AdminPage() {
         {/* ── Main Navigation Tabs for Dashboard ── */}
         <div className="flex items-center justify-between border-b border-rose/20 pb-3 flex-wrap gap-4">
           <div className="flex items-center gap-2 flex-wrap">
+            {/* 0. All Products Master Tab */}
+            <button
+              onClick={() => setActiveTab("all-products")}
+              className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === "all-products"
+                  ? "bg-rose text-white shadow-md scale-102"
+                  : "bg-white text-maroon/70 hover:text-maroon border border-rose/15 hover:border-rose/30"
+              }`}
+            >
+              <PackageOpen className="w-4 h-4" />
+              <span>All Products</span>
+              <span className="ml-1 text-[10px] bg-black/15 px-2 py-0.5 rounded-full">
+                {allProducts.length}
+              </span>
+            </button>
+
             {/* 1. Featured Best Sellers Tab */}
             <button
               onClick={() => setActiveTab("bestsellers")}
@@ -895,7 +1463,7 @@ export default function AdminPage() {
               </span>
             </button>
 
-            {/* 3. CUSTOM HAMPER Tab */}
+            {/* 3. WEDDING PACKAGES Tab */}
             <button
               onClick={() => setActiveTab("custom-hamper")}
               className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
@@ -904,10 +1472,10 @@ export default function AdminPage() {
                   : "bg-white text-maroon/70 hover:text-maroon border border-rose/15 hover:border-rose/30"
               }`}
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span>CUSTOM HAMPER</span>
+              <Gift className="w-4 h-4" />
+              <span>Wedding Packages</span>
               <span className="ml-1 text-[10px] bg-black/15 px-2 py-0.5 rounded-full">
-                {hamperItems.length}
+                {weddingPackage?.items?.length || 10} Pieces
               </span>
             </button>
 
@@ -926,6 +1494,34 @@ export default function AdminPage() {
           </div>
 
           {/* Quick Add Product Button or Sync Indicator */}
+          {activeTab === "all-products" && (
+            <button
+              type="button"
+              onClick={() => {
+                setNewAllProduct({
+                  name: "",
+                  category_tag: "Signature Creation",
+                  category: "bouquets",
+                  badge: "Trending",
+                  price: "3,500",
+                  original_price: "",
+                  highlight: "",
+                  image: "",
+                  whatsapp_message: "",
+                  media_gallery: [],
+                  is_bestseller: false,
+                  is_featured: false,
+                  is_active: true,
+                });
+                setIsAddingAllProduct(true);
+              }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md cursor-pointer transition-transform hover:scale-102"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Product</span>
+            </button>
+          )}
+
           {activeTab === "bestsellers" && (
             <button
               onClick={() => setIsAddingBestseller(true)}
@@ -948,11 +1544,13 @@ export default function AdminPage() {
 
           {activeTab === "custom-hamper" && (
             <button
-              onClick={() => setIsAddingHamperItem(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md cursor-pointer transition-transform hover:scale-102"
+              type="button"
+              onClick={handleSaveWeddingPackage}
+              disabled={isSavingWeddingPkg || !weddingPackage}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg cursor-pointer transition-transform hover:scale-102 disabled:opacity-50"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Base or Product</span>
+              <Save className="w-4 h-4" />
+              <span>{isSavingWeddingPkg ? "Saving..." : "Save Wedding Package"}</span>
             </button>
           )}
 
@@ -965,6 +1563,231 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* OPTION 0: ALL PRODUCTS MASTER CATALOG                      */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {activeTab === "all-products" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h3 className="font-display font-black text-xl text-maroon flex items-center gap-2">
+                  <PackageOpen className="w-5 h-5 text-rose" />
+                  <span>All Products Catalog ({allProducts.length})</span>
+                </h3>
+                <p className="font-body text-xs text-maroon/70">
+                  Master catalog of all gifts &amp; products across the website. Easily feature any product in Best Sellers or Featured Products, or remove it while keeping it in the store.
+                </p>
+              </div>
+
+              {/* Action buttons & Search */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewAllProduct({
+                      name: "",
+                      category_tag: "Signature Creation",
+                      category: "bouquets",
+                      badge: "Trending",
+                      price: "3,500",
+                      original_price: "",
+                      highlight: "",
+                      image: "",
+                      whatsapp_message: "",
+                      media_gallery: [],
+                      is_bestseller: false,
+                      is_featured: false,
+                      is_active: true,
+                    });
+                    setIsAddingAllProduct(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md cursor-pointer transition-transform hover:scale-102"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Product</span>
+                </button>
+
+                <div className="relative">
+                  <Search className="w-4 h-4 text-maroon/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search all products..."
+                    value={allProductsSearch}
+                    onChange={(e) => setAllProductsSearch(e.target.value)}
+                    className="pl-9 pr-3.5 py-2 rounded-xl bg-white border border-rose/20 text-maroon text-xs font-medium placeholder:text-maroon/40 focus:outline-none focus:border-rose shadow-2xs w-48 sm:w-64"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-rose/15 shadow-2xs">
+                  {[
+                    { id: "all", label: "All" },
+                    { id: "bouquets", label: "Bouquets" },
+                    { id: "hampers", label: "Hampers" },
+                    { id: "boxes", label: "Boxes" },
+                    { id: "chocolates", label: "Chocolates" },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setAllProductsCategoryFilter(cat.id)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        allProductsCategoryFilter === cat.id
+                          ? "bg-rose text-white shadow-xs"
+                          : "text-maroon/70 hover:text-maroon hover:bg-rose/5"
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Product Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredAllProducts.map((item) => (
+                <div
+                  key={item.id}
+                  className={`bg-white rounded-[32px] p-5 border transition-all flex flex-col justify-between ${
+                    item.is_active
+                      ? "border-rose/25 shadow-xs"
+                      : "border-neutral-200 opacity-60 bg-neutral-50/50"
+                  }`}
+                >
+                  <div>
+                    {/* Visual Photo Window */}
+                    <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#fdf2f4] to-white rounded-2xl overflow-hidden mb-4 p-3 flex items-center justify-center border border-rose/10">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        sizes="240px"
+                        className="object-contain p-2"
+                      />
+                      <span className="absolute top-2.5 left-2.5 text-[10px] font-bold uppercase tracking-wider bg-rose text-white px-2.5 py-0.5 rounded-full shadow-xs">
+                        {item.badge || "Product"}
+                      </span>
+                      <span className="absolute bottom-2.5 right-2.5 text-[10px] font-semibold text-maroon/60 bg-white/90 px-2 py-0.5 rounded-full border border-rose/15">
+                        {item.category_tag || item.category}
+                      </span>
+                    </div>
+
+                    {/* Price & Name */}
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <span className="font-display font-black text-xl text-maroon">
+                        Rs. {item.price}
+                      </span>
+                      {item.original_price && (
+                        <span className="text-xs text-maroon/40 line-through font-semibold">
+                          Rs. {item.original_price}
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 className="font-body font-bold text-base text-maroon leading-snug line-clamp-1">
+                      {item.name}
+                    </h4>
+
+                    <p className="font-body text-xs text-maroon/70 mt-1 line-clamp-2 leading-relaxed">
+                      {item.highlight || "Handcrafted creation for celebrations and gifting."}
+                    </p>
+
+                    {/* ── SECTION PLACEMENT CONTROLS ── */}
+                    <div className="mt-4 bg-[#fff8f9] rounded-2xl p-3 border border-rose/15 space-y-2">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-maroon/50">
+                        Feature Placement in Storefront:
+                      </div>
+
+                      {/* Best Sellers Toggle */}
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="font-bold text-maroon flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5 text-rose" />
+                          <span>Featured Best Sellers</span>
+                        </span>
+                        <button
+                          onClick={() => handleToggleProductBestseller(item)}
+                          className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                            item.is_bestseller
+                              ? "bg-rose text-white shadow-2xs hover:bg-rose/90"
+                              : "bg-white text-maroon/70 border border-rose/25 hover:border-rose hover:text-rose hover:bg-rose/5"
+                          }`}
+                        >
+                          {item.is_bestseller ? "✓ In Best Sellers (Remove)" : "+ Add to Best Sellers"}
+                        </button>
+                      </div>
+
+                      {/* Featured Products Toggle */}
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-rose/10">
+                        <span className="font-bold text-maroon flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Featured Products</span>
+                        </span>
+                        <button
+                          onClick={() => handleToggleProductFeatured(item)}
+                          className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                            item.is_featured
+                              ? "bg-amber-500 text-white shadow-2xs hover:bg-amber-600"
+                              : "bg-white text-maroon/70 border border-rose/25 hover:border-amber-500 hover:text-amber-700 hover:bg-amber-50/50"
+                          }`}
+                        >
+                          {item.is_featured ? "✓ In Featured (Remove)" : "+ Add to Featured"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="mt-5 pt-3 border-t border-rose/10 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => toggleAllProductActive(item)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                        item.is_active
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                          : "bg-neutral-100 text-neutral-600 border-neutral-300"
+                      }`}
+                    >
+                      {item.is_active ? "Visible in Store" : "Hidden"}
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAllProduct({
+                            ...item,
+                            media_gallery: Array.isArray(item.media_gallery) ? item.media_gallery : [],
+                            category: item.category || "bouquets",
+                            badge: item.badge || "",
+                            category_tag: item.category_tag || "",
+                            highlight: item.highlight || "",
+                            original_price: item.original_price || "",
+                          });
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#fdf2f4] hover:bg-rose hover:text-white text-rose font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteAllProduct(item.id, item.name);
+                        }}
+                        title="Delete product permanently"
+                        className="p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* OPTION 1: FEATURED BEST SELLERS                             */}
@@ -1200,158 +2023,301 @@ export default function AdminPage() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* OPTION 3: CUSTOM HAMPER (BASES & PRODUCTS)                   */}
+        {/* OPTION 3: WEDDING & CELEBRATION PACKAGES                    */}
         {/* ═══════════════════════════════════════════════════════════ */}
         {activeTab === "custom-hamper" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h3 className="font-display font-black text-xl text-maroon">
-                  CUSTOM HAMPER Studio ({hamperItems.length})
-                </h3>
-                <p className="font-body text-xs text-maroon/70">
-                  Manage Basket Bases (the foundational trays/baskets) and Products (chocolates & snacks or cakes).
-                </p>
-              </div>
+          <div className="space-y-8">
+            
+              <>
+                {/* ── 0. PACKAGE SELECTOR TABS ── */}
+                <div className="bg-white rounded-[28px] p-4 sm:p-5 border border-rose/20 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-rose/10 text-rose">
+                        <Package className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-maroon">
+                        Select Celebration Package to Edit ({weddingPackages.length} Total):
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-maroon/60 hidden sm:inline-block">
+                      Click any package to switch between weddings, birthday suites &amp; midnight surprises
+                    </span>
+                  </div>
 
-              {/* Filter Tabs */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setHamperFilter("all")}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    hamperFilter === "all"
-                      ? "bg-rose text-white shadow-2xs"
-                      : "bg-white text-maroon/70 border border-rose/15 hover:border-rose/30"
-                  }`}
-                >
-                  All Items ({hamperItems.length})
-                </button>
-                <button
-                  onClick={() => setHamperFilter("base")}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    hamperFilter === "base"
-                      ? "bg-rose text-white shadow-2xs"
-                      : "bg-white text-maroon/70 border border-rose/15 hover:border-rose/30"
-                  }`}
-                >
-                  Bases / Baskets ({hamperItems.filter((h) => h.type === "basket").length})
-                </button>
-                <button
-                  onClick={() => setHamperFilter("product")}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    hamperFilter === "product"
-                      ? "bg-rose text-white shadow-2xs"
-                      : "bg-white text-maroon/70 border border-rose/15 hover:border-rose/30"
-                  }`}
-                >
-                  Products / Treats ({hamperItems.filter((h) => h.type === "treat").length})
-                </button>
-              </div>
-            </div>
-
-            {/* Grid of Hamper Items */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {hamperItems
-                .filter((h) => {
-                  if (hamperFilter === "base") return h.type === "basket";
-                  if (hamperFilter === "product") return h.type === "treat";
-                  return true;
-                })
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className={`bg-white rounded-[32px] p-5 border transition-all flex flex-col justify-between ${
-                      item.is_active
-                        ? "border-rose/20 shadow-xs"
-                        : "border-neutral-200 opacity-60 bg-neutral-50/50"
-                    }`}
-                  >
-                    <div>
-                      {/* Visual & Type Badge */}
-                      <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#fdf2f4] to-white rounded-2xl overflow-hidden mb-3 p-3 flex items-center justify-center border border-rose/10">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          sizes="200px"
-                          className="object-contain p-2"
-                        />
-                        <span
-                          className={`absolute top-2.5 left-2.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs ${
-                            item.type === "basket"
-                              ? "bg-maroon text-white"
-                              : "bg-rose text-white"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    {weddingPackages.map((pkg) => {
+                      const isSelected = pkg.id === selectedPackageId;
+                      return (
+                        <button
+                          key={pkg.id}
+                          type="button"
+                          onClick={() => setSelectedPackageId(pkg.id)}
+                          className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between border ${
+                            isSelected
+                              ? "bg-rose text-white border-rose shadow-md scale-[1.01]"
+                              : "bg-[#fdf2f4] hover:bg-white text-maroon border-rose/15 hover:border-rose/30"
                           }`}
                         >
-                          {item.type === "basket"
-                            ? item.category_type === "cake"
-                              ? "Cake Hamper Base"
-                              : "Basket Base"
-                            : item.base_type === "cake"
-                            ? "Cake Only"
-                            : "Basket Product"}
+                          <div>
+                            <span
+                              className={`text-[9px] font-bold uppercase tracking-wider block mb-0.5 ${
+                                isSelected ? "text-white/80" : "text-rose"
+                              }`}
+                            >
+                              {pkg.category_tag}
+                            </span>
+                            <h5 className="font-serif font-bold text-xs line-clamp-1">
+                              {pkg.title}
+                            </h5>
+                          </div>
+                          <div className="mt-2 pt-1.5 border-t border-black/10 flex items-center justify-between">
+                            <span className="font-display font-black text-xs">
+                              PKR {pkg.price.toLocaleString()}
+                            </span>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                isSelected ? "bg-white/20 text-white" : "bg-white text-maroon/70"
+                              }`}
+                            >
+                              {pkg.items.length} items
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── 1. SUITE MASTER SETTINGS CARD ── */}
+                <div className="bg-white rounded-[32px] sm:rounded-[36px] p-6 sm:p-8 border border-rose/20 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-rose/15">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="p-2 rounded-xl bg-[#fdf2f4] text-rose">
+                          <Gift className="w-5 h-5" />
                         </span>
-                        {item.tag && (
-                          <span className="absolute bottom-2.5 right-2.5 text-[10px] font-bold text-rose bg-rose/10 px-2 py-0.5 rounded-full border border-rose/20">
-                            {item.tag}
-                          </span>
-                        )}
+                        <h3 className="font-display font-black text-xl sm:text-2xl text-maroon">
+                          {weddingPackage.title}
+                        </h3>
                       </div>
-
-                      <div className="flex items-baseline justify-between gap-2 mb-1">
-                        <span className="font-display font-black text-xl text-maroon">
-                          PKR {Number(item.price).toLocaleString()}
-                        </span>
-                        <span className="text-[10px] font-bold uppercase text-maroon/50 tracking-wider">
-                          {item.category}
-                        </span>
-                      </div>
-
-                      <h4 className="font-body font-bold text-base text-maroon leading-snug">
-                        {item.name}
-                      </h4>
-
-                      {item.subtitle && (
-                        <p className="font-body text-xs text-maroon/65 mt-1 line-clamp-2">
-                          {item.subtitle}
-                        </p>
-                      )}
+                      <p className="font-body text-xs sm:text-sm text-maroon/70">
+                        Manage master package bundle settings and individual piece prices. Changes are saved live to the database.
+                      </p>
                     </div>
 
-                    {/* Actions */}
-                    <div className="mt-5 pt-3 border-t border-rose/10 flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => toggleHamperActive(item)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
-                          item.is_active
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                            : "bg-neutral-100 text-neutral-600 border-neutral-300"
-                        }`}
-                      >
-                        {item.is_active ? "Active" : "Disabled"}
-                      </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveWeddingPackage}
+                      disabled={isSavingWeddingPkg}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95 cursor-pointer disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{isSavingWeddingPkg ? "Saving to Database..." : "Save Suite Details"}</span>
+                    </button>
+                  </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setEditingHamperItem(item)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#fdf2f4] hover:bg-rose hover:text-white text-rose font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          <span>Edit</span>
-                        </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                        Suite Title
+                      </label>
+                      <input
+                        type="text"
+                        value={weddingPackage.title}
+                        onChange={(e) =>
+                          setWeddingPackage({ ...weddingPackage, title: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                      />
+                    </div>
 
-                        <button
-                          onClick={() => handleDeleteHamperItem(item.id, item.name)}
-                          title="Delete product"
-                          className="p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                        Category Tag
+                      </label>
+                      <input
+                        type="text"
+                        value={weddingPackage.category_tag}
+                        onChange={(e) =>
+                          setWeddingPackage({ ...weddingPackage, category_tag: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                        Complete Bundle Price (PKR)
+                      </label>
+                      <input
+                        type="number"
+                        value={weddingPackage.price}
+                        onChange={(e) =>
+                          setWeddingPackage({
+                            ...weddingPackage,
+                            price: Number(e.target.value),
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                        Original Crossed Price (PKR)
+                      </label>
+                      <input
+                        type="number"
+                        value={weddingPackage.original_price || ""}
+                        placeholder="85000"
+                        onChange={(e) =>
+                          setWeddingPackage({
+                            ...weddingPackage,
+                            original_price: e.target.value ? Number(e.target.value) : undefined,
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                      />
                     </div>
                   </div>
-                ))}
-            </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                      Suite Highlight Subtitle
+                    </label>
+                    <input
+                      type="text"
+                      value={weddingPackage.highlight}
+                      onChange={(e) =>
+                        setWeddingPackage({ ...weddingPackage, highlight: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                    />
+                  </div>
+
+                  {/* Pricing Balance Summary */}
+                  <div className="p-4 rounded-2xl bg-[#fdf2f4] border border-rose/20 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-6">
+                      <div>
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-maroon/60">
+                          Complete Bundle Price
+                        </span>
+                        <span className="font-display font-black text-xl text-maroon">
+                          PKR {Number(weddingPackage.price).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="border-l border-rose/25 pl-6">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-maroon/60">
+                          Sum of {weddingPackage.items.length} Individual Pieces
+                        </span>
+                        <span className="font-display font-black text-xl text-maroon">
+                          PKR{" "}
+                          {weddingPackage.items
+                            .reduce((sum, it) => sum + (it.price || 0), 0)
+                            .toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs font-body text-maroon/80 font-medium">
+                      Note: Customers who pick all items get the bundle price. Customers who pick individual pieces pay the exact sum of chosen items.
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── 2. INDIVIDUAL PIECES ("PICK & CHOOSE") ── */}
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="font-display font-black text-xl text-maroon">
+                        Individual Pieces for &quot;Pick &amp; Choose&quot; ({weddingPackage.items.length} Products)
+                      </h4>
+                      <p className="font-body text-xs sm:text-sm text-maroon/70">
+                        These are the actual ceremonial items shown on the storefront. Click &quot;Edit Piece&quot; on any card to update its photo, title, price, or description.
+                      </p>
+                    </div>
+
+                    <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose/10 text-rose border border-rose/20 self-start sm:self-auto">
+                      All {weddingPackage.items.length} Items Live
+                    </span>
+                  </div>
+
+                  {/* 10 Items Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {weddingPackage.items.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-[28px] border border-rose/20 shadow-xs overflow-hidden flex flex-col justify-between transition-all hover:shadow-md hover:border-rose/35"
+                      >
+                        <div>
+                          {/* Image with Piece Badge */}
+                          <div className="relative w-full h-52 bg-[#fdf2f4] overflow-hidden border-b border-rose/10 group">
+                            <Image
+                              src={item.image}
+                              alt={item.name}
+                              fill
+                              sizes="(max-width: 640px) 100vw, 360px"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+
+                            <span className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/95 backdrop-blur-md text-maroon border border-white/60 shadow-xs">
+                              Piece #{idx + 1}
+                            </span>
+
+                            <span className="absolute bottom-3 left-3 font-display font-black text-lg text-white drop-shadow-md">
+                              PKR {Number(item.price).toLocaleString()}
+                            </span>
+                          </div>
+
+                          {/* Item Details */}
+                          <div className="p-5 space-y-2">
+                            <h5 className="font-serif font-bold text-base text-maroon leading-snug">
+                              {item.name}
+                            </h5>
+
+                            <p className="font-body text-xs text-maroon/70 line-clamp-3 leading-relaxed">
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Card Actions & Quick Price Editor */}
+                        <div className="p-4 pt-0 space-y-3">
+                          <div className="pt-3 border-t border-rose/10 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-1.5 flex-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-maroon/50 whitespace-nowrap">
+                                Quick Price:
+                              </span>
+                              <input
+                                type="number"
+                                defaultValue={item.price}
+                                onBlur={(e) => {
+                                  const val = Number(e.target.value);
+                                  if (val !== item.price && !isNaN(val)) {
+                                    handleQuickItemPriceChange(item.id, val);
+                                  }
+                                }}
+                                className="w-24 px-2.5 py-1 rounded-lg bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-xs focus:outline-none focus:border-rose focus:bg-white"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setEditingWeddingItem(item)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#fdf2f4] hover:bg-rose hover:text-white text-rose font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Edit Piece</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
           </div>
         )}
 
@@ -1402,14 +2368,17 @@ export default function AdminPage() {
                   onChange={(e) => setSizingSection(e.target.value as any)}
                   className="w-full sm:max-w-md px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/25 text-maroon font-bold text-xs sm:text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer shadow-2xs"
                 >
+                  <option value="all-products">
+                    All Products Catalog ({allProducts.length} items)
+                  </option>
                   <option value="bestsellers">
-                    🌟 Featured Best Sellers ({bestsellers.length} items)
+                    Featured Best Sellers ({bestsellers.length} items)
                   </option>
                   <option value="featured-products">
-                    ✨ Featured Products Catalog ({featuredProducts.length} items)
+                    Featured Products Catalog ({featuredProducts.length} items)
                   </option>
                   <option value="custom-hamper">
-                    🧺 Custom Hamper Studio ({hamperItems.length} items)
+                    Custom Hamper Studio ({hamperItems.length} items)
                   </option>
                 </select>
               </div>
@@ -1429,7 +2398,9 @@ export default function AdminPage() {
 
             {/* List of Products in Selected Section */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {(sizingSection === "bestsellers"
+              {(sizingSection === "all-products"
+                ? allProducts
+                : sizingSection === "bestsellers"
                 ? bestsellers
                 : sizingSection === "featured-products"
                 ? featuredProducts
@@ -1768,6 +2739,427 @@ export default function AdminPage() {
       </main>
 
       {/* ═══════════════════════════════════════════════════════════ */}
+      {/* MODAL: ADD NEW ALL-PRODUCT                                    */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isAddingAllProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-xl bg-white rounded-[36px] p-7 sm:p-9 border border-rose/25 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setIsAddingAllProduct(false)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-[#fdf2f4] text-maroon hover:text-rose flex items-center justify-center font-bold text-sm cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose bg-rose/10 px-3 py-1 rounded-full">
+              Master Catalog
+            </span>
+
+            <h3 className="font-display font-black text-2xl text-maroon mt-2 mb-5">
+              Add New Product to Store
+            </h3>
+
+            <form onSubmit={handleCreateAllProduct} className="space-y-4">
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Cover Photo (Primary Showcase)
+                </label>
+                <ImageUploader
+                  currentImageUrl={newAllProduct.image || ""}
+                  onImageUploaded={(url) =>
+                    setNewAllProduct({ ...newAllProduct, image: url })
+                  }
+                  aspectHint="Primary cover image displayed on cards and search"
+                />
+              </div>
+
+              {/* Secondary Media Gallery (Images & Videos) */}
+              <MultiMediaUploader
+                media={newAllProduct.media_gallery || []}
+                onChange={(gallery) =>
+                  setNewAllProduct({ ...newAllProduct, media_gallery: gallery })
+                }
+              />
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Heart-Shaped Money & Lights Bouquet"
+                  value={newAllProduct.name || ""}
+                  onChange={(e) =>
+                    setNewAllProduct({ ...newAllProduct, name: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Price (Rs.)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 6,500"
+                    value={newAllProduct.price || ""}
+                    onChange={(e) =>
+                      setNewAllProduct({ ...newAllProduct, price: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Original Price (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 7,800"
+                    value={newAllProduct.original_price || ""}
+                    onChange={(e) =>
+                      setNewAllProduct({
+                        ...newAllProduct,
+                        original_price: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Category Tag
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Luxury Bouquet, Treat Box"
+                    value={newAllProduct.category_tag || ""}
+                    onChange={(e) =>
+                      setNewAllProduct({ ...newAllProduct, category_tag: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Filter Category
+                  </label>
+                  <select
+                    value={newAllProduct.category || "bouquets"}
+                    onChange={(e) =>
+                      setNewAllProduct({ ...newAllProduct, category: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
+                  >
+                    <option value="bouquets">Bouquets</option>
+                    <option value="hampers">Hampers</option>
+                    <option value="boxes">Gift Boxes</option>
+                    <option value="chocolates">Chocolates</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Badge Tag
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Bestseller, Trending, Romantic"
+                  value={newAllProduct.badge || ""}
+                  onChange={(e) =>
+                    setNewAllProduct({ ...newAllProduct, badge: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Product Highlight / Short Description
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Brief summary of what makes this product special..."
+                  value={newAllProduct.highlight || ""}
+                  onChange={(e) =>
+                    setNewAllProduct({ ...newAllProduct, highlight: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                />
+              </div>
+
+              {/* Placement Checkboxes */}
+              <div className="bg-[#fff8f9] rounded-2xl p-4 border border-rose/20 space-y-2.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon">
+                  Feature In Homepage Sections:
+                </label>
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-maroon">
+                    <input
+                      type="checkbox"
+                      checked={!!newAllProduct.is_bestseller}
+                      onChange={(e) =>
+                        setNewAllProduct({ ...newAllProduct, is_bestseller: e.target.checked })
+                      }
+                      className="w-4 h-4 text-rose accent-rose rounded"
+                    />
+                    <span>Featured Best Sellers</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-maroon">
+                    <input
+                      type="checkbox"
+                      checked={!!newAllProduct.is_featured}
+                      onChange={(e) =>
+                        setNewAllProduct({ ...newAllProduct, is_featured: e.target.checked })
+                      }
+                      className="w-4 h-4 text-rose accent-rose rounded"
+                    />
+                    <span>Featured Products</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-rose/10">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingAllProduct(false)}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider text-maroon/60 hover:text-maroon cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg cursor-pointer"
+                >
+                  Save to All Products
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* MODAL: EDIT ALL PRODUCT                                       */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {editingAllProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-xl bg-white rounded-[36px] p-7 sm:p-9 border border-rose/25 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setEditingAllProduct(null)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-[#fdf2f4] text-maroon hover:text-rose flex items-center justify-center font-bold text-sm cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose bg-rose/10 px-3 py-1 rounded-full">
+              Master Product Editor
+            </span>
+
+            <h3 className="font-display font-black text-2xl text-maroon mt-2 mb-5">
+              Edit "{editingAllProduct.name}"
+            </h3>
+
+            <form onSubmit={handleSaveAllProductEdit} className="space-y-4">
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Cover Photo (Primary Showcase)
+                </label>
+                <ImageUploader
+                  currentImageUrl={editingAllProduct?.image || ""}
+                  onImageUploaded={(url) =>
+                    setEditingAllProduct({ ...editingAllProduct, image: url })
+                  }
+                />
+              </div>
+
+              {/* Secondary Media Gallery (Images & Videos) */}
+              <MultiMediaUploader
+                media={Array.isArray(editingAllProduct?.media_gallery) ? editingAllProduct.media_gallery : []}
+                onChange={(gallery) =>
+                  setEditingAllProduct({ ...editingAllProduct, media_gallery: gallery })
+                }
+              />
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  value={editingAllProduct?.name || ""}
+                  onChange={(e) =>
+                    setEditingAllProduct({ ...editingAllProduct, name: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Price (Rs.)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingAllProduct?.price || ""}
+                    onChange={(e) =>
+                      setEditingAllProduct({ ...editingAllProduct, price: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Original Price (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingAllProduct?.original_price || ""}
+                    onChange={(e) =>
+                      setEditingAllProduct({
+                        ...editingAllProduct,
+                        original_price: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Category Tag
+                  </label>
+                  <input
+                    type="text"
+                    value={editingAllProduct?.category_tag || ""}
+                    onChange={(e) =>
+                      setEditingAllProduct({ ...editingAllProduct, category_tag: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Filter Category
+                  </label>
+                  <select
+                    value={editingAllProduct?.category || "bouquets"}
+                    onChange={(e) =>
+                      setEditingAllProduct({ ...editingAllProduct, category: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
+                  >
+                    <option value="bouquets">Bouquets</option>
+                    <option value="hampers">Hampers</option>
+                    <option value="boxes">Gift Boxes</option>
+                    <option value="chocolates">Chocolates</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Badge Tag
+                </label>
+                <input
+                  type="text"
+                  value={editingAllProduct?.badge || ""}
+                  onChange={(e) =>
+                    setEditingAllProduct({ ...editingAllProduct, badge: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Product Highlight / Short Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={editingAllProduct?.highlight || ""}
+                  onChange={(e) =>
+                    setEditingAllProduct({ ...editingAllProduct, highlight: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                />
+              </div>
+
+              {/* Placement Checkboxes */}
+              <div className="bg-[#fff8f9] rounded-2xl p-4 border border-rose/20 space-y-2.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon">
+                  Feature In Homepage Sections:
+                </label>
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-maroon">
+                    <input
+                      type="checkbox"
+                      checked={!!editingAllProduct?.is_bestseller}
+                      onChange={(e) =>
+                        setEditingAllProduct({ ...editingAllProduct, is_bestseller: e.target.checked })
+                      }
+                      className="w-4 h-4 text-rose accent-rose rounded"
+                    />
+                    <span>Featured Best Sellers</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-maroon">
+                    <input
+                      type="checkbox"
+                      checked={!!editingAllProduct?.is_featured}
+                      onChange={(e) =>
+                        setEditingAllProduct({ ...editingAllProduct, is_featured: e.target.checked })
+                      }
+                      className="w-4 h-4 text-rose accent-rose rounded"
+                    />
+                    <span>Featured Products</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-rose/10">
+                <button
+                  type="button"
+                  onClick={() => setEditingAllProduct(null)}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider text-maroon/60 hover:text-maroon cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
       {/* MODAL: ADD BESTSELLER PRODUCT                               */}
       {/* ═══════════════════════════════════════════════════════════ */}
       {isAddingBestseller && (
@@ -1789,13 +3181,26 @@ export default function AdminPage() {
             </h3>
 
             <form onSubmit={handleCreateBestseller} className="space-y-4">
-              {/* Image Upload with Drag & Drop or Mobile Gallery */}
-              <ImageUploader
-                currentImageUrl={newBestseller.image || ""}
-                onImageUploaded={(url) =>
-                  setNewBestseller({ ...newBestseller, image: url })
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Cover Photo (Primary Showcase)
+                </label>
+                <ImageUploader
+                  currentImageUrl={newBestseller.image || ""}
+                  onImageUploaded={(url) =>
+                    setNewBestseller({ ...newBestseller, image: url })
+                  }
+                  aspectHint="Primary cover image displayed on cards and search"
+                />
+              </div>
+
+              {/* Secondary Media Gallery (Images & Videos) */}
+              <MultiMediaUploader
+                media={newBestseller.media_gallery || []}
+                onChange={(gallery) =>
+                  setNewBestseller({ ...newBestseller, media_gallery: gallery })
                 }
-                aspectHint="Transparent PNG recommended for high-impact visual"
               />
 
               <div>
@@ -1942,10 +3347,24 @@ export default function AdminPage() {
             </h3>
 
             <form onSubmit={handleSaveBestsellerEdit} className="space-y-4">
-              <ImageUploader
-                currentImageUrl={editingBestseller.image}
-                onImageUploaded={(url) =>
-                  setEditingBestseller({ ...editingBestseller, image: url })
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Cover Photo (Primary Showcase)
+                </label>
+                <ImageUploader
+                  currentImageUrl={editingBestseller.image}
+                  onImageUploaded={(url) =>
+                    setEditingBestseller({ ...editingBestseller, image: url })
+                  }
+                />
+              </div>
+
+              {/* Secondary Media Gallery (Images & Videos) */}
+              <MultiMediaUploader
+                media={editingBestseller.media_gallery || []}
+                onChange={(gallery) =>
+                  setEditingBestseller({ ...editingBestseller, media_gallery: gallery })
                 }
               />
 
@@ -2087,12 +3506,26 @@ export default function AdminPage() {
             </h3>
 
             <form onSubmit={handleCreateFeaturedProduct} className="space-y-4">
-              <ImageUploader
-                currentImageUrl={newFeaturedProduct.image || ""}
-                onImageUploaded={(url) =>
-                  setNewFeaturedProduct({ ...newFeaturedProduct, image: url })
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Cover Photo (Primary Showcase)
+                </label>
+                <ImageUploader
+                  currentImageUrl={newFeaturedProduct.image || ""}
+                  onImageUploaded={(url) =>
+                    setNewFeaturedProduct({ ...newFeaturedProduct, image: url })
+                  }
+                  aspectHint="Primary cover image displayed on cards"
+                />
+              </div>
+
+              {/* Secondary Media Gallery (Images & Videos) */}
+              <MultiMediaUploader
+                media={newFeaturedProduct.media_gallery || []}
+                onChange={(gallery) =>
+                  setNewFeaturedProduct({ ...newFeaturedProduct, media_gallery: gallery })
                 }
-                aspectHint="Transparent cutout or styled vitrine photo recommended"
               />
 
               <div>
@@ -2260,10 +3693,24 @@ export default function AdminPage() {
             </h3>
 
             <form onSubmit={handleSaveFeaturedProductEdit} className="space-y-4">
-              <ImageUploader
-                currentImageUrl={editingFeaturedProduct.image}
-                onImageUploaded={(url) =>
-                  setEditingFeaturedProduct({ ...editingFeaturedProduct, image: url })
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Cover Photo (Primary Showcase)
+                </label>
+                <ImageUploader
+                  currentImageUrl={editingFeaturedProduct.image}
+                  onImageUploaded={(url) =>
+                    setEditingFeaturedProduct({ ...editingFeaturedProduct, image: url })
+                  }
+                />
+              </div>
+
+              {/* Secondary Media Gallery (Images & Videos) */}
+              <MultiMediaUploader
+                media={editingFeaturedProduct.media_gallery || []}
+                onChange={(gallery) =>
+                  setEditingFeaturedProduct({ ...editingFeaturedProduct, media_gallery: gallery })
                 }
               />
 
@@ -2779,6 +4226,114 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* MODAL: EDIT WEDDING CEREMONIAL PIECE & PHOTO                */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {editingWeddingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white rounded-[36px] p-7 sm:p-9 border border-rose/25 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setEditingWeddingItem(null)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-[#fdf2f4] text-maroon hover:text-rose flex items-center justify-center font-bold text-sm cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose bg-rose/10 px-3 py-1 rounded-full">
+              Wedding Package &bull; Ceremonial Piece Editor
+            </span>
+
+            <h3 className="font-serif font-black text-2xl text-maroon mt-2 mb-5">
+              Edit "{editingWeddingItem.name}"
+            </h3>
+
+            <form onSubmit={handleSaveWeddingItemEdit} className="space-y-4">
+              {/* Product Photo with ImageUploader */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Piece Photo
+                </label>
+                <ImageUploader
+                  currentImageUrl={editingWeddingItem.image}
+                  onImageUploaded={(url) =>
+                    setEditingWeddingItem({ ...editingWeddingItem, image: url })
+                  }
+                />
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Product / Piece Title
+                </label>
+                <input
+                  type="text"
+                  value={editingWeddingItem.name}
+                  onChange={(e) =>
+                    setEditingWeddingItem({ ...editingWeddingItem, name: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  required
+                />
+              </div>
+
+              {/* Price */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Price (PKR)
+                </label>
+                <input
+                  type="number"
+                  value={editingWeddingItem.price}
+                  onChange={(e) =>
+                    setEditingWeddingItem({
+                      ...editingWeddingItem,
+                      price: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  required
+                />
+              </div>
+
+              {/* Inclusions & Description */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Inclusions &amp; Piece Details (Shown in Quick Inspect)
+                </label>
+                <textarea
+                  rows={4}
+                  value={editingWeddingItem.description}
+                  onChange={(e) =>
+                    setEditingWeddingItem({ ...editingWeddingItem, description: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon text-xs leading-relaxed focus:outline-none focus:border-rose focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-rose/10">
+                <button
+                  type="button"
+                  onClick={() => setEditingWeddingItem(null)}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider text-maroon/60 hover:text-maroon cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95 cursor-pointer"
+                >
+                  Save &amp; Update Live on Website
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

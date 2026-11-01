@@ -63,7 +63,7 @@ const CARDS: CardItem[] = [
   {
     id: "for-him",
     title: "FOR HIM",
-    subtitle: "CLASSIC CURATIONS",
+    subtitle: "POPULAR SELECTIONS",
     buttonText: "EXPLORE",
     theme: "for-him",
     href: "#packages",

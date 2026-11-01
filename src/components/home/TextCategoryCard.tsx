@@ -41,7 +41,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#e2405c]/20",
           btnBg: "bg-gradient-to-r from-[#e2405c] to-[#c72d47] text-white hover:from-[#c72d47] hover:to-[#a91f37]",
           badgeBg: "bg-white/80 text-[#87193b] border-[#f4aab8]",
-          badgeEmoji: "🌸",
           motif: (
             <>
               <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-rose/10 blur-xl pointer-events-none" />
@@ -59,7 +58,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#60a5fa]/20",
           btnBg: "bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-[0_4px_16px_rgba(37,99,235,0.35)]",
           badgeBg: "bg-white/10 text-[#bfdbfe] border-blue-400/30",
-          badgeEmoji: "👔",
           motif: (
             <>
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-blue-500/10 blur-xl pointer-events-none" />
@@ -77,7 +75,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#F7C242]/25",
           btnBg: "bg-gradient-to-r from-[#F7C242] to-[#e6ad27] text-[#330814] font-black hover:from-[#ffd666] hover:to-[#f0b933]",
           badgeBg: "bg-[#F7C242]/15 text-[#fde68a] border-[#F7C242]/30",
-          badgeEmoji: "💍",
           motif: (
             <>
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[#F7C242]/15 blur-xl pointer-events-none" />
@@ -95,7 +92,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#F7C242]/20",
           btnBg: "bg-gradient-to-r from-[#F7C242] to-[#d49d20] text-[#061710] font-black hover:from-[#ffd666]",
           badgeBg: "bg-[#F7C242]/15 text-[#F7C242] border-[#F7C242]/30",
-          badgeEmoji: "🌙",
           motif: (
             <>
               <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-[#F7C242]/15 blur-xl pointer-events-none" />
@@ -113,7 +109,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#e2405c]/15",
           btnBg: "bg-rose text-white hover:bg-[#cf334e] shadow-[0_4px_16px_rgba(226,64,92,0.3)]",
           badgeBg: "bg-white/90 text-[#6b1535] border-rose/25",
-          badgeEmoji: "💄",
           motif: (
             <>
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-rose/15 blur-xl pointer-events-none" />
@@ -131,7 +126,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#e0a899]/20",
           btnBg: "bg-[#e0a899] text-[#21181c] font-black hover:bg-[#ebd0c7]",
           badgeBg: "bg-white/10 text-[#ebd0c7] border-[#e0a899]/30",
-          badgeEmoji: "⌚",
           motif: (
             <>
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[#e0a899]/10 blur-xl pointer-events-none" />
@@ -149,7 +143,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#f59e0b]/20",
           btnBg: "bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white hover:from-[#d97706] shadow-[0_4px_16px_rgba(245,158,11,0.35)]",
           badgeBg: "bg-white/90 text-[#8a3b00] border-amber-300",
-          badgeEmoji: "🎂",
           motif: (
             <>
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-amber-400/20 blur-xl pointer-events-none" />
@@ -168,7 +161,6 @@ export default function TextCategoryCard({
           innerBorder: "border-[#c4a482]/25",
           btnBg: "bg-gradient-to-r from-[#876346] to-[#6e4e34] text-white hover:from-[#6e4e34] shadow-[0_4px_16px_rgba(135,99,70,0.3)]",
           badgeBg: "bg-white/90 text-[#543d2b] border-[#c4a482]/40",
-          badgeEmoji: "🕊️",
           motif: (
             <>
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[#c4a482]/20 blur-xl pointer-events-none" />
@@ -200,11 +192,10 @@ export default function TextCategoryCard({
       {/* Ambient subtle light sheen */}
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
 
-      {/* ── Occasion Emoji / Badge Tag ── */}
+      {/* ── Occasion Badge Tag ── */}
       <div
-        className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-xs mb-3 sm:mb-4 ${theme.badgeBg}`}
+        className={`relative z-10 inline-flex items-center px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-xs mb-3 sm:mb-4 ${theme.badgeBg}`}
       >
-        <span>{theme.badgeEmoji}</span>
         <span>{item.badge || item.title}</span>
       </div>
 

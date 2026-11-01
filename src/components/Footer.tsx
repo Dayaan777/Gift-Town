@@ -50,11 +50,11 @@ export default function Footer() {
           <div className="md:col-span-3 space-y-3">
             <h4 className="font-serif font-bold text-neutral-900 text-lg">Explore Sections</h4>
             <ul className="space-y-2 text-sm text-neutral-600">
-              <li><Link href="#gifts-of-the-month" className="hover:text-[#7a233c] transition-colors">Gifts of the Month</Link></li>
-              <li><Link href="#sentiments" className="hover:text-[#7a233c] transition-colors">Gifts by Sentiments</Link></li>
-              <li><Link href="#build-surprise" className="hover:text-[#7a233c] transition-colors">Custom Gift Hampers</Link></li>
-              <li><Link href="#packages" className="hover:text-[#7a233c] transition-colors">Best Sellers</Link></li>
-              <li><Link href="#featured-products" className="hover:text-[#7a233c] transition-colors">All Products</Link></li>
+              <li><Link href="/#gifts-of-the-month" className="hover:text-[#7a233c] transition-colors">Gifts of the Month</Link></li>
+              <li><Link href="/#sentiments" className="hover:text-[#7a233c] transition-colors">Gifts by Sentiments</Link></li>
+              <li><Link href="/custom" className="hover:text-[#7a233c] transition-colors">Custom Gift Hampers</Link></li>
+              <li><Link href="/packages" className="hover:text-[#7a233c] transition-colors">Celebration Packages</Link></li>
+              <li><Link href="/all-products" className="hover:text-[#7a233c] transition-colors">All Products</Link></li>
             </ul>
           </div>
 
