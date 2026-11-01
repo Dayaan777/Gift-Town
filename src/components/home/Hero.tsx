@@ -85,7 +85,7 @@ export default function Hero() {
 
           {/* ── Interactive Floating "View Packages" & "All Products" Pills ── */}
           <div
-            className={`absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 flex items-center gap-2 sm:gap-3 ${
+            className={`absolute bottom-[-14px] sm:bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 flex items-center gap-2 sm:gap-3 ${
               progress > 0.6 ? "opacity-0 pointer-events-none translate-y-3" : "opacity-100 translate-y-0"
             }`}
           >
