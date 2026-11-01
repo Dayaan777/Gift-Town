@@ -325,6 +325,14 @@ export default function FeaturedPackagesSection() {
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mt-8">
             {products.map((prod, idx) => {
               const isActive = currentIndex === idx;
+              const words = prod.name.trim().split(/\s+/);
+              const label =
+                words.length <= 2
+                  ? prod.name
+                  : words[1] === "&" || words[1].toLowerCase() === "and"
+                  ? words.slice(0, 3).join(" ")
+                  : words.slice(0, 2).join(" ");
+
               return (
                 <button
                   key={prod.id}
@@ -335,7 +343,7 @@ export default function FeaturedPackagesSection() {
                       : "bg-white/90 hover:bg-white text-maroon/80 border border-maroon/10 hover:border-maroon/30 shadow-xs"
                   }`}
                 >
-                  {prod.name.split(" ")[0]} {prod.name.split(" ")[1] || ""}
+                  {label}
                 </button>
               );
             })}
