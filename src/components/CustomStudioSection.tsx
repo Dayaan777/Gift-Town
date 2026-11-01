@@ -275,10 +275,47 @@ export default function CustomStudioSection() {
     setMounted(true);
   }, []);
 
-  // Fetch all packages items from Supabase to keep prices & photos 100% synchronized
+  // Fetch all custom studio items from Supabase hamper_items to keep prices, photos & items 100% synchronized with Admin
   useEffect(() => {
     async function loadStudioItems() {
       try {
+        const { data: hamperData, error: hamperErr } = await supabase
+          .from("hamper_items")
+          .select("*")
+          .order("display_order", { ascending: true });
+
+        if (!hamperErr && Array.isArray(hamperData) && hamperData.length > 0) {
+          const gathered: CustomStudioItem[] = hamperData
+            .filter((h: any) => h.is_active !== false)
+            .map((h: any) => {
+              let cat: CustomStudioItem["category"] = "baskets";
+              const c = (h.category || "").toLowerCase();
+              const n = (h.name || "").toLowerCase();
+              if (c.includes("bouquet") || n.includes("flower") || n.includes("rose")) cat = "bouquets";
+              else if (c.includes("cake") || n.includes("cake")) cat = "cakes";
+              else if (c.includes("chocolate") || n.includes("chocolate") || n.includes("fruit") || n.includes("snack") || n.includes("mithai")) cat = "chocolates";
+              else if (c.includes("balloon") || n.includes("balloon")) cat = "balloons";
+              else if (c.includes("apparel") || n.includes("shirt") || n.includes("watch") || n.includes("wallet") || n.includes("perfume") || n.includes("slipper") || n.includes("bag")) cat = "apparel";
+              else cat = "baskets";
+
+              return {
+                id: h.id,
+                name: h.name,
+                price: Number(h.price) || 0,
+                description: h.subtitle || "Custom celebration piece with luxury finishes.",
+                image: h.image || "/images/packages/engagement-baat-pakki/baat-pakki-4.jpeg",
+                category: cat,
+                packageSource: h.tag || "Custom Studio",
+              };
+            });
+
+          if (gathered.length > 0) {
+            setItems(gathered);
+            return;
+          }
+        }
+
+        // Fallback: load from wedding_packages if hamper_items is empty
         const { data, error } = await supabase.from("wedding_packages").select("*");
         if (!error && Array.isArray(data) && data.length > 0) {
           const gathered: CustomStudioItem[] = [];
@@ -286,7 +323,6 @@ export default function CustomStudioSection() {
           data.forEach((pkg) => {
             if (Array.isArray(pkg.items)) {
               pkg.items.forEach((it: any) => {
-                // Determine category based on item properties or fallback
                 let cat: CustomStudioItem["category"] = "baskets";
                 const n = (it.name || "").toLowerCase();
                 if (it.category) {

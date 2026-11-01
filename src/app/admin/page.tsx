@@ -63,6 +63,7 @@ interface AllProductRow {
   media_gallery?: MediaItem[];
   is_bestseller: boolean;
   is_featured: boolean;
+  is_custom_studio?: boolean;
   is_active: boolean;
   display_order: number;
   image_scale?: number;
@@ -534,6 +535,56 @@ export default function AdminPage() {
       await supabase.from("featured_products").delete().eq("id", product.id);
       setFeaturedProducts((prev) => prev.filter((p) => p.id !== product.id));
       showNotification(`Removed "${product.name}" from Featured Products (preserved in All Products)`);
+    }
+  };
+
+  const handleToggleProductCustomStudio = async (product: AllProductRow) => {
+    const nextState = !product.is_custom_studio;
+    setAllProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, is_custom_studio: nextState } : p))
+    );
+    await supabase.from("all_products").update({ is_custom_studio: nextState }).eq("id", product.id);
+
+    if (nextState) {
+      let customCat = "baskets";
+      const cat = (product.category || "").toLowerCase();
+      const name = product.name.toLowerCase();
+      if (cat === "bouquets" || name.includes("bouquet") || name.includes("flower")) customCat = "bouquets";
+      else if (cat === "chocolates" || name.includes("chocolate") || name.includes("mithai") || name.includes("snack")) customCat = "chocolates";
+      else if (name.includes("cake")) customCat = "cakes";
+      else if (cat === "boxes" || name.includes("tray") || name.includes("basket") || name.includes("box")) customCat = "baskets";
+      else if (name.includes("perfume") || name.includes("shirt") || name.includes("watch") || name.includes("wallet")) customCat = "apparel";
+      else if (name.includes("balloon")) customCat = "balloons";
+
+      const cleanPrice = Number(String(product.price).replace(/[^0-9]/g, "")) || 1000;
+      const itemToAdd: HamperItemRow = {
+        id: product.id,
+        name: product.name,
+        type: "treat",
+        category: customCat,
+        price: cleanPrice,
+        subtitle: product.highlight || "Custom Studio Collection item",
+        tag: product.badge || "Studio Pick",
+        image: product.image,
+        is_active: product.is_active !== false,
+        display_order: hamperItems.length + 1,
+      };
+
+      await supabase.from("hamper_items").upsert([itemToAdd]);
+      setHamperItems((prev) => {
+        const idx = prev.findIndex((h) => h.id === product.id);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = itemToAdd;
+          return updated;
+        }
+        return [itemToAdd, ...prev];
+      });
+      showNotification(`Added "${product.name}" to Custom Studio page & inventory!`);
+    } else {
+      await supabase.from("hamper_items").delete().eq("id", product.id);
+      setHamperItems((prev) => prev.filter((h) => h.id !== product.id));
+      showNotification(`Removed "${product.name}" from Custom Studio (preserved in All Products)`);
     }
   };
 
@@ -1281,14 +1332,41 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateWeddingItem = (itemId: string, field: keyof PackageItemRow, val: any) => {
-    if (!weddingPackage) return;
-    setWeddingPackage({
-      ...weddingPackage,
-      items: weddingPackage.items.map((it) =>
-        it.id === itemId ? { ...it, [field]: field === "price" ? (val === "" ? 0 : Number(val)) : val } : it
-      ),
-    });
+  const handleTogglePackageItemCustomStudio = async (item: PackageItemRow) => {
+    const alreadyInStudio = hamperItems.some((h) => h.id === item.id || h.name.toLowerCase() === item.name.toLowerCase());
+
+    if (!alreadyInStudio) {
+      let customCat = "baskets";
+      const cat = (item.category || "").toLowerCase();
+      const name = item.name.toLowerCase();
+      if (cat === "bouquets" || name.includes("bouquet") || name.includes("flower") || name.includes("rose")) customCat = "bouquets";
+      else if (cat === "chocolates" || name.includes("chocolate") || name.includes("fruit") || name.includes("snack") || name.includes("mithai")) customCat = "chocolates";
+      else if (cat === "cakes" || name.includes("cake") || name.includes("confectionery")) customCat = "cakes";
+      else if (cat === "baskets" || name.includes("tray") || name.includes("basket") || name.includes("box")) customCat = "baskets";
+      else if (cat === "apparel" || name.includes("perfume") || name.includes("shirt") || name.includes("watch") || name.includes("wallet") || name.includes("slipper") || name.includes("bag")) customCat = "apparel";
+      else if (cat === "balloons" || name.includes("balloon")) customCat = "balloons";
+
+      const itemToAdd: HamperItemRow = {
+        id: item.id,
+        name: item.name,
+        type: "treat",
+        category: customCat,
+        price: Number(item.price) || 0,
+        subtitle: item.description || "Package ceremonial piece",
+        tag: weddingPackage?.title || "From Package",
+        image: item.image || "/images/packages/engagement-baat-pakki/baat-pakki-4.jpeg",
+        is_active: true,
+        display_order: hamperItems.length + 1,
+      };
+
+      await supabase.from("hamper_items").upsert([itemToAdd]);
+      setHamperItems((prev) => [itemToAdd, ...prev]);
+      showNotification(`Added "${item.name}" from package to Custom Studio!`);
+    } else {
+      await supabase.from("hamper_items").delete().or(`id.eq.${item.id},name.eq.${item.name}`);
+      setHamperItems((prev) => prev.filter((h) => h.id !== item.id && h.name.toLowerCase() !== item.name.toLowerCase()));
+      showNotification(`Removed "${item.name}" from Custom Studio`);
+    }
   };
 
   // ═════════════════════════════════════════════════════════════════
@@ -1853,6 +1931,29 @@ export default function AdminPage() {
                           {item.is_featured ? "✓ In Featured (Remove)" : "+ Add to Featured"}
                         </button>
                       </div>
+
+                      {/* Custom Studio Toggle */}
+                      {(() => {
+                        const inStudio = item.is_custom_studio || hamperItems.some(h => h.id === item.id || h.name.toLowerCase() === item.name.toLowerCase());
+                        return (
+                          <div className="flex items-center justify-between text-xs pt-2 border-t border-rose/10">
+                            <span className="font-bold text-maroon flex items-center gap-1.5">
+                              <Boxes className="w-3.5 h-3.5 text-indigo-500" />
+                              <span>Custom Studio</span>
+                            </span>
+                            <button
+                              onClick={() => handleToggleProductCustomStudio(item)}
+                              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                                inStudio
+                                  ? "bg-indigo-600 text-white shadow-2xs hover:bg-indigo-700"
+                                  : "bg-white text-maroon/70 border border-rose/25 hover:border-indigo-500 hover:text-indigo-700 hover:bg-indigo-50/50"
+                              }`}
+                            >
+                              {inStudio ? "✓ In Custom Studio (Remove)" : "+ Add to Custom Studio"}
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -2344,7 +2445,33 @@ export default function AdminPage() {
 
                         {/* Card Actions & Quick Price Editor */}
                         <div className="p-4 pt-0 space-y-3">
-                          <div className="pt-3 border-t border-rose/10 flex items-center justify-between gap-3">
+                          {/* Custom Studio Authority Toggle */}
+                          {(() => {
+                            const inStudio = hamperItems.some(
+                              (h) => h.id === item.id || h.name.toLowerCase() === item.name.toLowerCase()
+                            );
+                            return (
+                              <div className="pt-2 flex items-center justify-between text-xs border-t border-rose/10">
+                                <span className="font-bold text-maroon flex items-center gap-1.5">
+                                  <Boxes className="w-3.5 h-3.5 text-indigo-500" />
+                                  <span>Custom Studio</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePackageItemCustomStudio(item)}
+                                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                                    inStudio
+                                      ? "bg-indigo-600 text-white shadow-2xs hover:bg-indigo-700"
+                                      : "bg-white text-maroon/70 border border-rose/25 hover:border-indigo-500 hover:text-indigo-700 hover:bg-indigo-50/50"
+                                  }`}
+                                >
+                                  {inStudio ? "✓ In Studio (Remove)" : "+ Add to Custom Studio"}
+                                </button>
+                              </div>
+                            );
+                          })()}
+
+                          <div className="pt-2 border-t border-rose/10 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-1.5 flex-1">
                               <span className="text-[10px] font-bold uppercase tracking-wider text-maroon/50 whitespace-nowrap">
                                 Quick Price:
@@ -3927,80 +4054,37 @@ export default function AdminPage() {
             </button>
 
             <span className="text-[11px] font-bold uppercase tracking-wider text-rose bg-rose/10 px-3 py-1 rounded-full">
-              Custom Hamper Studio
+              Custom Studio Inventory
             </span>
 
             <h3 className="font-display font-black text-2xl text-maroon mt-2 mb-5">
-              Add Base or Product
+              Add New Custom Studio Item
             </h3>
 
             <form onSubmit={handleCreateHamperItem} className="space-y-4">
-              {/* Item Role Dropdown: Base or Inside Product */}
+              {/* Category Dropdown */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
-                  Item Classification
+                  Category
                 </label>
                 <select
-                  value={newHamperItem.type}
-                  onChange={(e) => {
-                    const nextType = e.target.value as "basket" | "treat";
+                  value={newHamperItem.category}
+                  onChange={(e) =>
                     setNewHamperItem({
                       ...newHamperItem,
-                      type: nextType,
-                      category: nextType === "basket" ? "Baskets" : "Chocolates",
-                      tag: nextType === "basket" ? "Custom Base" : "Popular",
-                    });
-                  }}
+                      category: e.target.value,
+                    })
+                  }
                   className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
                 >
-                  <option value="basket">Hamper Base (Basket, Tray, Box)</option>
-                  <option value="treat">Inside Product (Snack, Chocolate, Cake Item)</option>
+                  <option value="bouquets">Bouquets</option>
+                  <option value="cakes">Cakes</option>
+                  <option value="chocolates">Chocolates & Treats</option>
+                  <option value="baskets">Baskets & Trays</option>
+                  <option value="apparel">Apparel & Perfumes</option>
+                  <option value="balloons">Balloons</option>
                 </select>
               </div>
-
-              {/* Dynamic Sub-Dropdown Based on Role */}
-              {newHamperItem.type === "basket" ? (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
-                    Base Intended For
-                  </label>
-                  <select
-                    value={newHamperItem.category_type}
-                    onChange={(e) =>
-                      setNewHamperItem({
-                        ...newHamperItem,
-                        category_type: e.target.value as "treats" | "cake",
-                      })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
-                  >
-                    <option value="treats">General Treats & Chocolates Basket</option>
-                    <option value="cake">Special Celebration Cake Hamper</option>
-                  </select>
-                  <p className="text-[11px] text-maroon/50 mt-1">
-                    Selecting this registers a brand new base in the website's top base selector.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
-                    Product Destination Base
-                  </label>
-                  <select
-                    value={newHamperItem.base_type}
-                    onChange={(e) =>
-                      setNewHamperItem({
-                        ...newHamperItem,
-                        base_type: e.target.value as "basket" | "cake",
-                      })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
-                  >
-                    <option value="basket">Products for Basket Hampers (Chocolates & Snacks)</option>
-                    <option value="cake">Cakes Only (For Celebration Cake Hampers)</option>
-                  </select>
-                </div>
-              )}
 
               {/* Image Uploader */}
               <ImageUploader
@@ -4120,7 +4204,7 @@ export default function AdminPage() {
             </button>
 
             <span className="text-[11px] font-bold uppercase tracking-wider text-rose bg-rose/10 px-3 py-1 rounded-full">
-              CUSTOM HAMPER Studio Editor
+              Custom Studio Editor
             </span>
 
             <h3 className="font-display font-black text-2xl text-maroon mt-2 mb-5">
@@ -4136,66 +4220,29 @@ export default function AdminPage() {
                 }
               />
 
-              {/* Classification dropdown */}
+              {/* Category Dropdown */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
-                  Item Classification
+                  Category
                 </label>
                 <select
-                  value={editingHamperItem.type}
+                  value={editingHamperItem.category}
                   onChange={(e) =>
                     setEditingHamperItem({
                       ...editingHamperItem,
-                      type: e.target.value as "basket" | "treat",
+                      category: e.target.value,
                     })
                   }
                   className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
                 >
-                  <option value="basket">Hamper Base (Basket, Tray, Box)</option>
-                  <option value="treat">Inside Product (Snack, Chocolate, Cake Item)</option>
+                  <option value="bouquets">Bouquets</option>
+                  <option value="cakes">Cakes</option>
+                  <option value="chocolates">Chocolates & Treats</option>
+                  <option value="baskets">Baskets & Trays</option>
+                  <option value="apparel">Apparel & Perfumes</option>
+                  <option value="balloons">Balloons</option>
                 </select>
               </div>
-
-              {/* Context Dropdown */}
-              {editingHamperItem.type === "basket" ? (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
-                    Base Intended For
-                  </label>
-                  <select
-                    value={editingHamperItem.category_type || "treats"}
-                    onChange={(e) =>
-                      setEditingHamperItem({
-                        ...editingHamperItem,
-                        category_type: e.target.value as "treats" | "cake",
-                      })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
-                  >
-                    <option value="treats">General Treats & Chocolates Basket</option>
-                    <option value="cake">Special Celebration Cake Hamper</option>
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
-                    Product Destination Base
-                  </label>
-                  <select
-                    value={editingHamperItem.base_type || "basket"}
-                    onChange={(e) =>
-                      setEditingHamperItem({
-                        ...editingHamperItem,
-                        base_type: e.target.value as "basket" | "cake",
-                      })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white cursor-pointer"
-                  >
-                    <option value="basket">Products for Basket Hampers (Chocolates & Snacks)</option>
-                    <option value="cake">Cakes Only (For Celebration Cake Hampers)</option>
-                  </select>
-                </div>
-              )}
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
