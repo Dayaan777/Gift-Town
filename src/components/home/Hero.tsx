@@ -38,7 +38,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full pb-8 sm:pb-0 overflow-visible sm:overflow-hidden bg-[#fce3e0] z-0 -mt-16 sm:-mt-[4.75rem]">
+    <section className="relative w-full pb-10 sm:pb-0 overflow-visible sm:overflow-hidden bg-[#fce3e0] z-0 -mt-16 sm:-mt-[4.75rem]">
       {/* 
         Hero Banner container:
         Matches exact continuous #fce3e0 background with zero opacity fading
@@ -85,7 +85,7 @@ export default function Hero() {
 
           {/* ── Interactive Floating "View Packages" & "All Products" Pills ── */}
           <div
-            className={`absolute bottom-[-14px] sm:bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 flex items-center gap-2 sm:gap-3 ${
+            className={`absolute bottom-[-24px] sm:bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 flex items-center gap-2 sm:gap-3 ${
               progress > 0.6 ? "opacity-0 pointer-events-none translate-y-3" : "opacity-100 translate-y-0"
             }`}
           >
