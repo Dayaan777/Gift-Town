@@ -38,7 +38,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#fce3e0] z-0 -mt-16 sm:-mt-[4.75rem]">
+    <section className="relative w-full pb-8 sm:pb-0 overflow-visible sm:overflow-hidden bg-[#fce3e0] z-0 -mt-16 sm:-mt-[4.75rem]">
       {/* 
         Hero Banner container:
         Matches exact continuous #fce3e0 background with zero opacity fading
