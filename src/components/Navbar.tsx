@@ -344,9 +344,8 @@ export default function Navbar() {
                         setMobileMenuOpen(false);
                         setMobileGiftsOpen(false);
                       }}
-                      className="flex items-center gap-2 py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
+                      className="flex items-center py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
                     >
-                      <Heart className="w-3.5 h-3.5 text-rose shrink-0" />
                       <span>Gifts by Sentiments</span>
                     </Link>
                     <Link
@@ -355,9 +354,8 @@ export default function Navbar() {
                         setMobileMenuOpen(false);
                         setMobileGiftsOpen(false);
                       }}
-                      className="flex items-center gap-2 py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
+                      className="flex items-center py-1.5 px-3 rounded-lg hover:bg-[#faedf0] text-xs font-semibold text-neutral-800"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-[#b46513] shrink-0" />
                       <span>Gifts of the Month</span>
                     </Link>
                   </div>
