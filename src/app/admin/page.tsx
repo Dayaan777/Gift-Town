@@ -164,9 +164,9 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Tabs: "all-products" | "bestsellers" | "featured-products" | "custom-hamper" | "image-sizing"
+  // Tabs: "all-products" | "custom-studio" | "all-packages" | "image-sizing"
   const [activeTab, setActiveTab] = useState<
-    "all-products" | "bestsellers" | "featured-products" | "custom-hamper" | "image-sizing"
+    "all-products" | "custom-studio" | "all-packages" | "image-sizing"
   >("all-products");
   const [allProducts, setAllProducts] = useState<AllProductRow[]>([]);
   const [allProductsSearch, setAllProductsSearch] = useState("");
@@ -211,10 +211,26 @@ export default function AdminPage() {
 
   const [editingHamperItem, setEditingHamperItem] = useState<HamperItemRow | null>(null);
   const [isAddingHamperItem, setIsAddingHamperItem] = useState(false);
+  const [isImportingToCustomStudio, setIsImportingToCustomStudio] = useState(false);
+  const [customStudioSearch, setCustomStudioSearch] = useState("");
+  const [customStudioCategoryFilter, setCustomStudioCategoryFilter] = useState("all");
+
   const [weddingPackages, setWeddingPackages] = useState<WeddingPackageRow[]>(
     DEFAULT_PACKAGES_LIST as unknown as WeddingPackageRow[]
   );
   const [selectedPackageId, setSelectedPackageId] = useState<string>("pkg-baat-pakki");
+  const [isAddingPackage, setIsAddingPackage] = useState(false);
+  const [newPackage, setNewPackage] = useState<Partial<WeddingPackageRow>>({
+    title: "",
+    category_tag: "Celebration Suite",
+    price: 15000,
+    original_price: 18000,
+    badge: "New Package",
+    highlight: "Curated celebration bundle with handcrafted items.",
+    description: "All-inclusive celebration suite customized for your special moments.",
+    images: ["/images/packages/engagement-baat-pakki/baat-pakki-4.jpeg"],
+    items: [],
+  });
 
   const weddingPackage =
     weddingPackages.find((p) => p.id === selectedPackageId) ||
@@ -1074,6 +1090,115 @@ export default function AdminPage() {
   };
 
   // ═════════════════════════════════════════════════════════════════
+  // ALL PACKAGES (WEDDING & CELEBRATION PACKAGES) CRUD
+  // ═════════════════════════════════════════════════════════════════
+  const handleCreatePackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPackage.title || !newPackage.price) {
+      alert("Please provide package title and price");
+      return;
+    }
+
+    const id = "pkg-" + Date.now().toString().slice(-6);
+    const itemToAdd: WeddingPackageRow = {
+      id,
+      title: newPackage.title,
+      category_tag: newPackage.category_tag || "Celebration Suite",
+      price: Number(newPackage.price),
+      original_price: newPackage.original_price ? Number(newPackage.original_price) : undefined,
+      badge: newPackage.badge || "Signature Package",
+      highlight: newPackage.highlight || "Special celebration package with all-inclusive elements.",
+      description: newPackage.description || "Deluxe all-in-one package for memorable occasions.",
+      images: newPackage.images && newPackage.images.length > 0 ? newPackage.images : ["/images/packages/engagement-baat-pakki/baat-pakki-4.jpeg"],
+      items: (newPackage.items && newPackage.items.length > 0) ? newPackage.items : [
+        {
+          id: `item-${Date.now()}-1`,
+          name: "Signature Fresh Flowers Bouquet",
+          price: 3500,
+          description: "Freshly arranged floral bouquet with luxury wrapping ribbon.",
+          image: "/images/packages/engagement-baat-pakki/item-1-pink-rose-bouquet.webp",
+          category: "bouquets",
+        },
+        {
+          id: `item-${Date.now()}-2`,
+          name: "1-Pound Celebration Cake",
+          price: 2500,
+          description: "Freshly baked celebration cake in premium transparent display box.",
+          image: "/images/packages/engagement-baat-pakki/item-2-chocolate-cake-pvp.webp",
+          category: "cakes",
+        }
+      ],
+    };
+
+    setWeddingPackages((prev) => [itemToAdd, ...prev]);
+    setSelectedPackageId(itemToAdd.id);
+    setIsAddingPackage(false);
+
+    try {
+      const { error } = await supabase.from("wedding_packages").insert([itemToAdd]);
+      if (!error) {
+        showNotification(`Created new package "${itemToAdd.title}" live!`);
+        setNewPackage({
+          title: "",
+          category_tag: "Celebration Suite",
+          price: 15000,
+          original_price: 18000,
+          badge: "New Package",
+          highlight: "Curated celebration bundle with handcrafted items.",
+          description: "All-inclusive celebration suite customized for your special moments.",
+          images: ["/images/packages/engagement-baat-pakki/baat-pakki-4.jpeg"],
+          items: [],
+        });
+      } else {
+        alert("Failed to save package to database: " + error.message);
+        fetchDashboardData();
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  const handleImportToCustomStudio = async (product: AllProductRow) => {
+    // Map product category to Custom Studio category
+    let customCat = "baskets";
+    const cat = (product.category || "").toLowerCase();
+    const name = product.name.toLowerCase();
+    if (cat === "bouquets" || name.includes("bouquet") || name.includes("flower")) customCat = "bouquets";
+    else if (cat === "chocolates" || name.includes("chocolate") || name.includes("mithai") || name.includes("snack")) customCat = "chocolates";
+    else if (name.includes("cake")) customCat = "cakes";
+    else if (cat === "boxes" || name.includes("tray") || name.includes("basket") || name.includes("box")) customCat = "baskets";
+    else if (name.includes("perfume") || name.includes("shirt") || name.includes("watch") || name.includes("wallet")) customCat = "apparel";
+    else if (name.includes("balloon")) customCat = "balloons";
+
+    const cleanPrice = Number(String(product.price).replace(/[^0-9]/g, "")) || 1000;
+    const newId = "cs-" + product.id + "-" + Date.now().toString().slice(-4);
+
+    const itemToAdd: HamperItemRow = {
+      id: newId,
+      name: product.name,
+      type: "treat",
+      base_type: "basket",
+      category_type: "treats",
+      category: customCat,
+      price: cleanPrice,
+      subtitle: product.highlight || "Imported from All Products catalog",
+      tag: product.badge || "Featured",
+      image: product.image || "/images/hamper-studio/items/item-snickers.png",
+      is_active: true,
+      display_order: hamperItems.length + 1,
+    };
+
+    setHamperItems((prev) => [itemToAdd, ...prev]);
+    const { error } = await supabase.from("hamper_items").insert([itemToAdd]);
+    if (!error) {
+      showNotification(`Moved "${product.name}" to Custom Studio!`);
+    } else {
+      alert("Error adding to Custom Studio: " + error.message);
+      fetchDashboardData();
+    }
+  };
+
+  // ═════════════════════════════════════════════════════════════════
   // WEDDING PACKAGE (BAAT PAKKI) & INDIVIDUAL ITEMS CRUD
   // ═════════════════════════════════════════════════════════════════
   const handleSaveWeddingPackage = async (e: React.FormEvent) => {
@@ -1431,55 +1556,39 @@ export default function AdminPage() {
               </span>
             </button>
 
-            {/* 1. Featured Best Sellers Tab */}
+            {/* 1. Custom Studio Tab */}
             <button
-              onClick={() => setActiveTab("bestsellers")}
+              onClick={() => setActiveTab("custom-studio")}
               className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                activeTab === "bestsellers"
+                activeTab === "custom-studio"
                   ? "bg-rose text-white shadow-md scale-102"
                   : "bg-white text-maroon/70 hover:text-maroon border border-rose/15 hover:border-rose/30"
               }`}
             >
-              <Flame className="w-4 h-4" />
-              <span>Featured Best Sellers</span>
+              <Boxes className="w-4 h-4" />
+              <span>Custom Studio</span>
               <span className="ml-1 text-[10px] bg-black/15 px-2 py-0.5 rounded-full">
-                {bestsellers.length}
+                {hamperItems.length}
               </span>
             </button>
 
-            {/* 2. Featured Products Tab */}
+            {/* 2. All Packages Tab */}
             <button
-              onClick={() => setActiveTab("featured-products")}
+              onClick={() => setActiveTab("all-packages")}
               className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                activeTab === "featured-products"
-                  ? "bg-rose text-white shadow-md scale-102"
-                  : "bg-white text-maroon/70 hover:text-maroon border border-rose/15 hover:border-rose/30"
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Featured Products</span>
-              <span className="ml-1 text-[10px] bg-black/15 px-2 py-0.5 rounded-full">
-                {featuredProducts.length}
-              </span>
-            </button>
-
-            {/* 3. WEDDING PACKAGES Tab */}
-            <button
-              onClick={() => setActiveTab("custom-hamper")}
-              className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                activeTab === "custom-hamper"
+                activeTab === "all-packages"
                   ? "bg-rose text-white shadow-md scale-102"
                   : "bg-white text-maroon/70 hover:text-maroon border border-rose/15 hover:border-rose/30"
               }`}
             >
               <Gift className="w-4 h-4" />
-              <span>Wedding Packages</span>
+              <span>All Packages</span>
               <span className="ml-1 text-[10px] bg-black/15 px-2 py-0.5 rounded-full">
-                {weddingPackage?.items?.length || 10} Pieces
+                {weddingPackages.length} Suites
               </span>
             </button>
 
-            {/* 4. Control Product Image Sizes Tab */}
+            {/* 3. Control Product Image Sizes Tab */}
             <button
               onClick={() => setActiveTab("image-sizing")}
               className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
@@ -1493,7 +1602,7 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {/* Quick Add Product Button or Sync Indicator */}
+          {/* Quick Header Actions */}
           {activeTab === "all-products" && (
             <button
               type="button"
@@ -1522,36 +1631,47 @@ export default function AdminPage() {
             </button>
           )}
 
-          {activeTab === "bestsellers" && (
-            <button
-              onClick={() => setIsAddingBestseller(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md cursor-pointer transition-transform hover:scale-102"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Bestseller</span>
-            </button>
+          {activeTab === "custom-studio" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsImportingToCustomStudio(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white text-maroon border border-rose/25 text-xs font-bold uppercase tracking-wider shadow-2xs hover:border-rose cursor-pointer transition-transform hover:scale-102"
+              >
+                <ArrowRight className="w-3.5 h-3.5 text-rose" />
+                <span>Move from All Products</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAddingHamperItem(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md cursor-pointer transition-transform hover:scale-102"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Studio Item</span>
+              </button>
+            </div>
           )}
 
-          {activeTab === "featured-products" && (
-            <button
-              onClick={() => setIsAddingFeaturedProduct(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md cursor-pointer transition-transform hover:scale-102"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Product</span>
-            </button>
-          )}
-
-          {activeTab === "custom-hamper" && (
-            <button
-              type="button"
-              onClick={handleSaveWeddingPackage}
-              disabled={isSavingWeddingPkg || !weddingPackage}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg cursor-pointer transition-transform hover:scale-102 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{isSavingWeddingPkg ? "Saving..." : "Save Wedding Package"}</span>
-            </button>
+          {activeTab === "all-packages" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsAddingPackage(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white text-maroon border border-rose/25 text-xs font-bold uppercase tracking-wider shadow-2xs hover:border-rose cursor-pointer transition-transform hover:scale-102"
+              >
+                <Plus className="w-3.5 h-3.5 text-rose" />
+                <span>Add New Package</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveWeddingPackage}
+                disabled={isSavingWeddingPkg || !weddingPackage}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg cursor-pointer transition-transform hover:scale-102 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                <span>{isSavingWeddingPkg ? "Saving..." : "Save Suite Live"}</span>
+              </button>
+            </div>
           )}
 
           {activeTab === "image-sizing" && (
@@ -1790,152 +1910,94 @@ export default function AdminPage() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* OPTION 1: FEATURED BEST SELLERS                             */}
+        {/* OPTION 1: CUSTOM STUDIO ITEMS (LINKED TO /custom)           */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        {activeTab === "bestsellers" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-display font-black text-xl text-maroon">
-                  Featured Best Sellers ({bestsellers.length})
-                </h3>
-                <p className="font-body text-xs text-maroon/70">
-                  Manage creations in the homepage "Featured Bestsellers" carousel.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {bestsellers.map((item) => (
-                <div
-                  key={item.id}
-                  className={`bg-white rounded-[32px] p-5 border transition-all flex flex-col justify-between ${
-                    item.is_active
-                      ? "border-rose/25 shadow-xs"
-                      : "border-neutral-200 opacity-60 bg-neutral-50/50"
-                  }`}
-                >
-                  <div>
-                    {/* Visual header */}
-                    <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#fdf2f4] to-white rounded-2xl overflow-hidden mb-4 p-3 flex items-center justify-center border border-rose/10">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        sizes="240px"
-                        className="object-contain p-2"
-                      />
-                      <span className="absolute top-2.5 left-2.5 text-[10px] font-bold uppercase tracking-wider bg-rose text-white px-2.5 py-0.5 rounded-full shadow-xs">
-                        {item.badge}
-                      </span>
-                      <span className="absolute bottom-2.5 right-2.5 text-[10px] font-semibold text-maroon/60 bg-white/90 px-2 py-0.5 rounded-full border border-rose/15">
-                        {item.category_tag}
-                      </span>
-                    </div>
-
-                    <div className="flex items-baseline justify-between gap-2 mb-1">
-                      <span className="font-display font-black text-xl text-maroon">
-                        Rs. {item.price}
-                      </span>
-                      {item.original_price && (
-                        <span className="text-xs text-maroon/40 line-through font-semibold">
-                          Rs. {item.original_price}
-                        </span>
-                      )}
-                    </div>
-
-                    <h4 className="font-body font-bold text-base text-maroon leading-snug line-clamp-1">
-                      {item.name}
-                    </h4>
-
-                    <p className="font-body text-xs text-maroon/70 mt-2 line-clamp-2 leading-relaxed">
-                      {item.highlight}
-                    </p>
-                  </div>
-
-                  {/* Actions footer */}
-                  <div className="mt-5 pt-3 border-t border-rose/10 flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => toggleBestsellerActive(item)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
-                        item.is_active
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                          : "bg-neutral-100 text-neutral-600 border-neutral-300"
-                      }`}
-                    >
-                      {item.is_active ? "Visible" : "Hidden"}
-                    </button>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setEditingBestseller(item)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#fdf2f4] hover:bg-rose hover:text-white text-rose font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteBestseller(item.id, item.name)}
-                        title="Delete product"
-                        className="p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* OPTION 2: FEATURED PRODUCTS CATALOG                         */}
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {activeTab === "featured-products" && (
+        {activeTab === "custom-studio" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <h3 className="font-display font-black text-xl text-maroon">
-                  Featured Products Catalog ({featuredProducts.length})
+                <h3 className="font-display font-black text-xl text-maroon flex items-center gap-2">
+                  <Boxes className="w-5 h-5 text-rose" />
+                  <span>Custom Gift Studio Inventory ({hamperItems.length})</span>
                 </h3>
                 <p className="font-body text-xs text-maroon/70">
-                  Manage all items displayed in the "FEATURED PRODUCTS" section with instant live synchronization.
+                  Manage individual pick-and-choose items displayed on the Custom Gift Studio page (/custom). Add, edit, remove, or import any product directly from All Products.
                 </p>
               </div>
 
-              {/* Filter Tabs */}
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                {[
-                  { id: "all", label: "All Items" },
-                  { id: "bouquets", label: "Bouquets" },
-                  { id: "hampers", label: "Hampers" },
-                  { id: "boxes", label: "Gift Boxes" },
-                  { id: "chocolates", label: "Chocolates" },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setProductFilter(cat.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      productFilter === cat.id
-                        ? "bg-rose text-white shadow-2xs"
-                        : "bg-white text-maroon/70 border border-rose/15 hover:border-rose/30"
-                    }`}
-                  >
-                    {cat.label} (
-                    {cat.id === "all"
-                      ? featuredProducts.length
-                      : featuredProducts.filter((p) => p.category === cat.id).length}
-                    )
-                  </button>
-                ))}
+              {/* Action Buttons & Filters */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setIsImportingToCustomStudio(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-rose/25 text-maroon text-xs font-bold uppercase tracking-wider shadow-2xs hover:border-rose cursor-pointer transition-transform hover:scale-102"
+                >
+                  <ArrowRight className="w-3.5 h-3.5 text-rose" />
+                  <span>Import from All Products</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddingHamperItem(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose to-[#d43751] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md cursor-pointer transition-transform hover:scale-102"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Studio Item</span>
+                </button>
+
+                <div className="relative">
+                  <Search className="w-4 h-4 text-maroon/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search studio items..."
+                    value={customStudioSearch}
+                    onChange={(e) => setCustomStudioSearch(e.target.value)}
+                    className="pl-9 pr-3.5 py-2 rounded-xl bg-white border border-rose/20 text-maroon text-xs font-medium placeholder:text-maroon/40 focus:outline-none focus:border-rose shadow-2xs w-48 sm:w-60"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-rose/15 shadow-2xs flex-wrap">
+                  {[
+                    { id: "all", label: "All" },
+                    { id: "bouquets", label: "Bouquets" },
+                    { id: "cakes", label: "Cakes" },
+                    { id: "chocolates", label: "Chocolates" },
+                    { id: "baskets", label: "Baskets & Trays" },
+                    { id: "apparel", label: "Apparel" },
+                    { id: "balloons", label: "Balloons" },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCustomStudioCategoryFilter(cat.id)}
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        customStudioCategoryFilter === cat.id
+                          ? "bg-rose text-white shadow-xs"
+                          : "text-maroon/70 hover:text-maroon hover:bg-rose/5"
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-              {featuredProducts
-                .filter((p) => productFilter === "all" || p.category === productFilter)
+            {/* Custom Studio Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+              {hamperItems
+                .filter((item) => {
+                  if (customStudioCategoryFilter !== "all") {
+                    const c = (item.category || "").toLowerCase();
+                    if (!c.includes(customStudioCategoryFilter.toLowerCase())) return false;
+                  }
+                  if (!customStudioSearch.trim()) return true;
+                  const q = customStudioSearch.toLowerCase();
+                  return (
+                    item.name.toLowerCase().includes(q) ||
+                    (item.subtitle && item.subtitle.toLowerCase().includes(q)) ||
+                    (item.tag && item.tag.toLowerCase().includes(q))
+                  );
+                })
                 .map((item) => (
                   <div
                     key={item.id}
@@ -1946,7 +2008,7 @@ export default function AdminPage() {
                     }`}
                   >
                     <div>
-                      {/* Visual header */}
+                      {/* Image header */}
                       <div className="relative w-full aspect-square bg-gradient-to-br from-[#fdf2f4] to-white rounded-2xl overflow-hidden mb-3 p-3 flex items-center justify-center border border-rose/10">
                         <Image
                           src={item.image}
@@ -1955,52 +2017,49 @@ export default function AdminPage() {
                           sizes="200px"
                           className="object-contain p-2"
                         />
-                        {item.badge && (
+                        {item.tag && (
                           <span className="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider bg-rose text-white px-2 py-0.5 rounded-full shadow-xs">
-                            {item.badge}
+                            {item.tag}
                           </span>
                         )}
                         <span className="absolute bottom-2 right-2 text-[9px] font-semibold text-maroon/70 bg-white/90 px-2 py-0.5 rounded-full border border-rose/15">
-                          {item.category_tag}
+                          {item.category || item.type}
                         </span>
                       </div>
 
                       <div className="flex items-baseline justify-between gap-1 mb-1">
                         <span className="font-display font-black text-lg text-maroon">
-                          Rs. {item.price}
+                          PKR {Number(item.price).toLocaleString()}
                         </span>
-                        {item.original_price && (
-                          <span className="text-[11px] text-maroon/40 line-through font-semibold">
-                            Rs. {item.original_price}
-                          </span>
-                        )}
                       </div>
 
                       <h4 className="font-body font-bold text-sm text-maroon leading-snug line-clamp-1">
                         {item.name}
                       </h4>
 
-                      <p className="font-body text-[11px] text-maroon/70 mt-1 line-clamp-2 leading-relaxed">
-                        {item.highlight}
-                      </p>
+                      {item.subtitle && (
+                        <p className="font-body text-[11px] text-maroon/70 mt-1 line-clamp-2 leading-relaxed">
+                          {item.subtitle}
+                        </p>
+                      )}
                     </div>
 
                     {/* Actions footer */}
                     <div className="mt-4 pt-3 border-t border-rose/10 flex items-center justify-between gap-2">
                       <button
-                        onClick={() => toggleFeaturedProductActive(item)}
+                        onClick={() => toggleHamperActive(item)}
                         className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
                           item.is_active
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                             : "bg-neutral-100 text-neutral-600 border-neutral-300"
                         }`}
                       >
-                        {item.is_active ? "Visible" : "Hidden"}
+                        {item.is_active ? "Live in Studio" : "Hidden"}
                       </button>
 
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => setEditingFeaturedProduct(item)}
+                          onClick={() => setEditingHamperItem(item)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#fdf2f4] hover:bg-rose hover:text-white text-rose font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -2008,8 +2067,8 @@ export default function AdminPage() {
                         </button>
 
                         <button
-                          onClick={() => handleDeleteFeaturedProduct(item.id, item.name)}
-                          title="Delete product"
+                          onClick={() => handleDeleteHamperItem(item.id, item.name)}
+                          title="Delete studio item"
                           className="p-1 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -2023,9 +2082,9 @@ export default function AdminPage() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* OPTION 3: WEDDING & CELEBRATION PACKAGES                    */}
+        {/* OPTION 2: ALL PACKAGES (WEDDING & CELEBRATION PACKAGES)      */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        {activeTab === "custom-hamper" && (
+        {activeTab === "all-packages" && (
           <div className="space-y-8">
             
               <>
@@ -4330,6 +4389,269 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* MODAL: ADD NEW CELEBRATION PACKAGE (ALL PACKAGES)           */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isAddingPackage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-xl bg-white rounded-[36px] p-7 sm:p-9 border border-rose/25 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setIsAddingPackage(false)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-[#fdf2f4] text-maroon hover:text-rose flex items-center justify-center font-bold text-sm cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose bg-rose/10 px-3 py-1 rounded-full">
+              All Packages &bull; Add New Suite
+            </span>
+
+            <h3 className="font-display font-black text-2xl text-maroon mt-2 mb-5">
+              Create New Celebration Package
+            </h3>
+
+            <form onSubmit={handleCreatePackage} className="space-y-4">
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Package Showcase Image
+                </label>
+                <ImageUploader
+                  currentImageUrl={newPackage.images?.[0] || ""}
+                  onImageUploaded={(url) =>
+                    setNewPackage({
+                      ...newPackage,
+                      images: [url, ...(newPackage.images?.slice(1) || [])],
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Package Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Birthday Celebration Suite for Her"
+                  value={newPackage.title}
+                  onChange={(e) =>
+                    setNewPackage({ ...newPackage, title: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Category Tag
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Birthday Packages"
+                    value={newPackage.category_tag}
+                    onChange={(e) =>
+                      setNewPackage({ ...newPackage, category_tag: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Badge Pill
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Bestseller Suite"
+                    value={newPackage.badge}
+                    onChange={(e) =>
+                      setNewPackage({ ...newPackage, badge: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Bundle Price (PKR)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 15000"
+                    value={newPackage.price}
+                    onChange={(e) =>
+                      setNewPackage({ ...newPackage, price: Number(e.target.value) })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-bold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                    Original Price (Optional PKR)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 18000"
+                    value={newPackage.original_price || ""}
+                    onChange={(e) =>
+                      setNewPackage({
+                        ...newPackage,
+                        original_price: e.target.value ? Number(e.target.value) : undefined,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Highlight Subtitle
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Handcrafted celebration package with fresh blooms and treats"
+                  value={newPackage.highlight}
+                  onChange={(e) =>
+                    setNewPackage({ ...newPackage, highlight: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon font-semibold text-sm focus:outline-none focus:border-rose focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-maroon/70 mb-1.5">
+                  Package Description
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Details about what makes this package special..."
+                  value={newPackage.description}
+                  onChange={(e) =>
+                    setNewPackage({ ...newPackage, description: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#fff8f9] border border-rose/20 text-maroon text-xs leading-relaxed focus:outline-none focus:border-rose focus:bg-white"
+                />
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-rose/10">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingPackage(false)}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider text-maroon/60 hover:text-maroon cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95 cursor-pointer"
+                >
+                  Save Package to Storefront
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* MODAL: IMPORT FROM ALL PRODUCTS TO CUSTOM STUDIO            */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isImportingToCustomStudio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-white rounded-[36px] p-7 sm:p-9 border border-rose/25 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setIsImportingToCustomStudio(false)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-[#fdf2f4] text-maroon hover:text-rose flex items-center justify-center font-bold text-sm cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose bg-rose/10 px-3 py-1 rounded-full">
+              Custom Studio Inventory
+            </span>
+
+            <h3 className="font-display font-black text-2xl text-maroon mt-2 mb-2">
+              Move Product from All Products
+            </h3>
+            <p className="font-body text-xs text-maroon/70 mb-5">
+              Click &quot;Add to Studio&quot; on any product below to instantly copy it into Custom Gift Studio so customers can select it for custom hampers.
+            </p>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              {allProducts.map((p) => {
+                const alreadyInStudio = hamperItems.some(
+                  (h) => h.name.toLowerCase() === p.name.toLowerCase()
+                );
+                return (
+                  <div
+                    key={p.id}
+                    className="p-3.5 rounded-2xl bg-[#fff8f9] border border-rose/15 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-12 h-12 rounded-xl bg-white border border-rose/10 overflow-hidden flex-shrink-0">
+                        <Image
+                          src={p.image}
+                          alt={p.name}
+                          fill
+                          sizes="48px"
+                          className="object-contain p-1"
+                        />
+                      </div>
+                      <div>
+                        <h5 className="font-body font-bold text-sm text-maroon line-clamp-1">
+                          {p.name}
+                        </h5>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="font-display font-black text-rose">
+                            Rs. {p.price}
+                          </span>
+                          <span className="text-[10px] text-maroon/50 uppercase">
+                            • {p.category_tag || p.category}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={alreadyInStudio}
+                      onClick={() => handleImportToCustomStudio(p)}
+                      className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                        alreadyInStudio
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
+                          : "bg-rose text-white hover:bg-rose/90 shadow-2xs hover:scale-102"
+                      }`}
+                    >
+                      {alreadyInStudio ? "✓ In Studio" : "+ Add to Studio"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-rose/10 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsImportingToCustomStudio(false)}
+                className="px-6 py-2.5 rounded-full bg-maroon text-[#FFF4D0] text-xs font-bold uppercase tracking-wider cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/Navbar";
 import StickerBadge from "@/components/StickerBadge";
-import { Sparkles, ShoppingBag, Gift, Clock, MessageCircle, SlidersHorizontal } from "lucide-react";
+import { ShoppingBag, Gift, Clock, MessageCircle, SlidersHorizontal } from "lucide-react";
 
 const CustomStudioSection = dynamic(
   () => import("@/components/CustomStudioSection"),
@@ -29,7 +29,6 @@ export default function CustomPage() {
         <div className="relative pt-10 sm:pt-14 pb-6 sm:pb-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
           <div className="flex items-center justify-center mb-3">
             <StickerBadge variant="rose" rotate="-2" size="sm">
-              <Sparkles className="w-3.5 h-3.5 fill-[#d46f83] text-[#d46f83]" />
               <span>Master Custom Studio &bull; Pick &amp; Choose</span>
             </StickerBadge>
           </div>
@@ -41,22 +40,6 @@ export default function CustomPage() {
           <p className="font-body font-medium text-sm sm:text-base text-maroon/80 mt-3 max-w-2xl mx-auto leading-relaxed">
             Pick and choose individual artisanal items from our signature celebration packages or create your dream gift box from scratch. Filter by bouquets, cakes, treats, luxury baskets, and more.
           </p>
-
-          {/* Quick Perks Strip */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs font-semibold text-maroon/75">
-            <span className="inline-flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-rose/15 shadow-2xs">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-rose" />
-              <span>Pick &amp; Choose Any Items</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-rose/15 shadow-2xs">
-              <Gift className="w-3.5 h-3.5 text-rose" />
-              <span>Full Custom Gift Box</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-rose/15 shadow-2xs">
-              <Clock className="w-3.5 h-3.5 text-rose" />
-              <span>Midnight Delivery Ready</span>
-            </span>
-          </div>
         </div>
 
         {/* Master Custom Studio Component */}

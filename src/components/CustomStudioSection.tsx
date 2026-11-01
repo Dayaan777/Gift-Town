@@ -269,6 +269,7 @@ export default function CustomStudioSection() {
   const [selectedItemIds, setSelectedItemIds] = useState<Record<string, boolean>>({});
   const [previewItem, setPreviewItem] = useState<CustomStudioItem | null>(null);
   const [mounted, setMounted] = useState(false);
+  const gridContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -400,10 +401,20 @@ export default function CustomStudioSection() {
     { id: "balloons", label: "Balloons" },
   ];
 
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    // Smooth scroll down to the product cards section on category click
+    if (gridContainerRef.current) {
+      const yOffset = -90; // offset for sticky navbar
+      const y = gridContainerRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="relative pb-24 sm:pb-32">
       {/* ── Filters & Search Control Bar ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-4xl mx-auto">
           {/* Search Box */}
           <div className="relative w-full sm:flex-1">
@@ -430,16 +441,16 @@ export default function CustomStudioSection() {
           )}
         </div>
 
-        {/* Category Pills Ribbon */}
-        <div className="mt-5 flex items-center justify-center gap-2 overflow-x-auto pb-2 px-1 no-scrollbar">
+        {/* Category Pills Ribbon - Wrapped cleanly so it wraps nicely on mobile instead of cutting off */}
+        <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-3xl mx-auto px-1">
           {categories.map((c) => (
             <button
               key={c.id}
               type="button"
-              onClick={() => setSelectedCategory(c.id)}
-              className={`px-4 sm:px-5 py-2.5 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+              onClick={() => handleCategorySelect(c.id)}
+              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-body font-bold text-[11px] sm:text-xs uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                 selectedCategory === c.id
-                  ? "bg-rose text-white shadow-md scale-105"
+                  ? "bg-rose text-white shadow-md scale-102"
                   : "bg-white/85 text-maroon/75 hover:bg-white hover:text-maroon border border-rose/15"
               }`}
             >
@@ -454,16 +465,16 @@ export default function CustomStudioSection() {
         </div>
       </div>
 
-      {/* ── Product Cards Grid ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+      {/* ── Product Cards Grid ── 2 columns on mobile, 3 on md/lg, 4 on xl */}
+      <div ref={gridContainerRef} className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 scroll-mt-24">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           {filteredItems.map((item) => {
             const isSelected = !!selectedItemIds[item.id];
 
             return (
               <div
                 key={item.id}
-                className={`relative rounded-[28px] bg-white border transition-all duration-300 overflow-hidden flex flex-col justify-between ${
+                className={`relative rounded-2xl sm:rounded-[28px] bg-white border transition-all duration-300 overflow-hidden flex flex-col justify-between ${
                   isSelected
                     ? "border-rose shadow-[0_12px_30px_rgba(226,64,92,0.16)] ring-2 ring-rose/30"
                     : "border-rose/15 shadow-sm hover:shadow-md hover:border-rose/30"
@@ -479,7 +490,7 @@ export default function CustomStudioSection() {
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
 
@@ -488,8 +499,8 @@ export default function CustomStudioSection() {
 
                     {/* Top Package Source Tag */}
                     {item.packageSource && (
-                      <div className="absolute top-3 left-3 z-10 pointer-events-none">
-                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-white/95 backdrop-blur-md text-maroon border border-white/60 shadow-xs">
+                      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 pointer-events-none">
+                        <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-bold tracking-wider uppercase bg-white/95 backdrop-blur-md text-maroon border border-white/60 shadow-xs">
                           {item.packageSource.replace("Package", "").replace("Suite", "")}
                         </span>
                       </div>
@@ -502,48 +513,48 @@ export default function CustomStudioSection() {
                         e.stopPropagation();
                         setPreviewItem(item);
                       }}
-                      className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-maroon flex items-center justify-center shadow-xs transition-transform active:scale-90 cursor-pointer"
+                      className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white text-maroon flex items-center justify-center shadow-xs transition-transform active:scale-90 cursor-pointer"
                       title="Inspect piece details"
                     >
-                      <Eye className="w-4 h-4 text-maroon" />
+                      <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-maroon" />
                     </button>
 
                     {/* Price floating on image */}
-                    <div className="absolute bottom-3 left-3 z-10">
-                      <span className="font-display font-black text-lg text-white drop-shadow-md">
+                    <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-10">
+                      <span className="font-display font-black text-sm sm:text-lg text-white drop-shadow-md">
                         PKR {item.price.toLocaleString()}
                       </span>
                     </div>
                   </div>
 
                   {/* Card Content */}
-                  <div className="p-4 sm:p-5 space-y-2">
-                    <h4 className="font-serif font-bold text-base text-maroon leading-snug line-clamp-2">
+                  <div className="p-3 sm:p-5 space-y-1 sm:space-y-2">
+                    <h4 className="font-serif font-bold text-xs sm:text-base text-maroon leading-snug line-clamp-2">
                       {item.name}
                     </h4>
-                    <p className="font-body text-xs text-maroon/70 line-clamp-2 leading-relaxed">
+                    <p className="font-body text-[10px] sm:text-xs text-maroon/70 line-clamp-2 leading-relaxed">
                       {item.description}
                     </p>
                   </div>
                 </div>
 
                 {/* Add to Custom Box Toggle Button */}
-                <div className="p-4 pt-0">
+                <div className="p-2.5 sm:p-4 pt-0">
                   <button
                     type="button"
                     onClick={() => toggleItem(item.id)}
-                    className={`w-full py-3 px-4 rounded-full font-body font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
+                    className={`w-full py-2 sm:py-3 px-2 sm:px-4 rounded-full font-body font-bold text-[10px] sm:text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 sm:gap-2 ${
                       isSelected
                         ? "bg-rose text-white shadow-md hover:bg-[#d43751]"
                         : "bg-[#fdf0f2] hover:bg-[#fcdde1] text-maroon border border-rose/25"
                     }`}
                   >
                     {isSelected ? (
-                      <span>Added to Selection</span>
+                      <span>Added</span>
                     ) : (
                       <>
-                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>+ Add to Custom Box</span>
+                        <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
+                        <span>Add to Box</span>
                       </>
                     )}
                   </button>
