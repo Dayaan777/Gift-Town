@@ -382,15 +382,6 @@ export default function Navbar() {
                 <span>All Products</span>
               </Link>
 
-              {/* Custom Basket */}
-              <Link
-                href="/custom"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-[#faedf0] text-neutral-800 font-semibold text-sm"
-              >
-                <ShoppingBag className="w-4 h-4 text-rose" />
-                <span>Custom Basket</span>
-              </Link>
             </div>
 
             <div className="pt-2 border-t border-[#f5d5db] flex flex-col gap-2">
@@ -408,7 +399,7 @@ export default function Navbar() {
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <span>Create your Own Basket</span>
+                <span>Create your Own Order</span>
               </Link>
               <a
                 href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20want%20to%20plan%20a%20surprise."

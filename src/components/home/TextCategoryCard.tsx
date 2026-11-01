@@ -223,12 +223,6 @@ export default function TextCategoryCard({
         <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </Link>
 
-      {/* ── Corner Sparkle / Arrow Badge ── */}
-      <div
-        className={`absolute bottom-4 left-4 sm:bottom-5 sm:left-5 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-md transform -rotate-12 transition-transform duration-300 hover:scale-110 ${theme.btnBg}`}
-      >
-        <Sparkles className="w-3.5 h-3.5" />
-      </div>
     </div>
   );
 }
