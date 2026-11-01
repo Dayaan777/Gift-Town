@@ -46,15 +46,14 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links to Page Sections */}
+          {/* Quick Links to Website Pages */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="font-serif font-bold text-neutral-900 text-lg">Explore Sections</h4>
+            <h4 className="font-serif font-bold text-neutral-900 text-lg">Explore Pages</h4>
             <ul className="space-y-2 text-sm text-neutral-600">
-              <li><Link href="/#gifts-of-the-month" className="hover:text-[#7a233c] transition-colors">Gifts of the Month</Link></li>
-              <li><Link href="/#sentiments" className="hover:text-[#7a233c] transition-colors">Gifts by Sentiments</Link></li>
-              <li><Link href="/custom" className="hover:text-[#7a233c] transition-colors">Custom Gift Hampers</Link></li>
-              <li><Link href="/packages" className="hover:text-[#7a233c] transition-colors">Celebration Packages</Link></li>
+              <li><Link href="/" className="hover:text-[#7a233c] transition-colors">Home</Link></li>
               <li><Link href="/all-products" className="hover:text-[#7a233c] transition-colors">All Products</Link></li>
+              <li><Link href="/packages" className="hover:text-[#7a233c] transition-colors">Celebration Packages</Link></li>
+              <li><Link href="/custom" className="hover:text-[#7a233c] transition-colors">Custom Gift Studio</Link></li>
             </ul>
           </div>
 
@@ -98,9 +97,10 @@ export default function Footer() {
           </span>
         </div>
 
-        {/* Bottom Copyright */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center text-xs text-neutral-500 gap-3">
+        {/* Bottom Copyright & Credit */}
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-3 border-t border-[#f5d5db]/60">
           <p>© 2026 Gift Town. All rights reserved.</p>
+          <p className="font-medium text-neutral-600">Made by Buildpad Labs</p>
         </div>
       </div>
     </footer>
