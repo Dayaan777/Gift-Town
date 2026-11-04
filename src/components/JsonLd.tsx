@@ -111,13 +111,6 @@ export default function JsonLd() {
         },
       ],
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "5.0",
-      reviewCount: "128",
-      bestRating: "5",
-      worstRating: "1",
-    },
     sameAs: [
       "https://github.com/Dayaan777/Gift-Town",
       "https://gift-town.netlify.app",
