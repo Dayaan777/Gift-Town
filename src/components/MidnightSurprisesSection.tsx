@@ -2,6 +2,7 @@ import React from "react";
 import ImagePlaceholder from "@/components/ImagePlaceholder";
 import StickerBadge from "@/components/StickerBadge";
 import { Moon, Sparkles, Clock, MapPin, MessageCircle, Heart } from "lucide-react";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function MidnightSurprisesSection() {
   return (
@@ -69,7 +70,7 @@ export default function MidnightSurprisesSection() {
             {/* CTA */}
             <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4">
               <a
-                href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20want%20to%20book%20a%20Midnight%20Surprise%20delivery."
+                href={getWhatsAppUrl("Hi Gift Town! I want to book a Midnight Surprise delivery.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2.5 bg-gradient-to-r from-[#d46f83] to-[#e7889b] hover:from-[#c75e72] hover:to-[#df778c] text-white px-8 py-3.5 rounded-full font-semibold text-sm shadow-[0_6px_25px_rgba(212,111,131,0.4)] transition-all transform hover:-translate-y-0.5 active:translate-y-0"

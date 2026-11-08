@@ -18,6 +18,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 /* ── Hotspot data for the 3 interactive product pins ─────────── */
 const HOTSPOTS = [
@@ -202,7 +203,7 @@ export default function HeroSection() {
                 Explore Packages
               </Link>
               <a
-                href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20would%20like%20a%20custom%20gift%20package."
+                href={getWhatsAppUrl("Hi Gift Town! I would like a custom gift package.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-white border border-[#f5d5db]
@@ -299,7 +300,7 @@ export default function HeroSection() {
                         {hs.desc}
                       </p>
                       <a
-                        href={`https://wa.me/?text=${encodeURIComponent(hs.whatsapp)}`}
+                        href={getWhatsAppUrl(hs.whatsapp)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5

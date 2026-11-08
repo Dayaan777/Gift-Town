@@ -15,6 +15,11 @@ import {
   Cake,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import {
+  getWhatsAppUrl,
+  formatMultiItemWhatsAppMessage,
+  formatSingleProductWhatsAppMessage,
+} from "@/lib/whatsapp";
 
 interface FlyingItem {
   id: string;
@@ -527,28 +532,36 @@ export default function BuildSurpriseSection() {
   // WhatsApp order builder
   const buildWhatsAppMessage = () => {
     if (isCakeBasket) {
-      const lines = [
-        "Hi Gift Town! I would like to order the Heritage Round Cake Hamper:",
-        `• Basket: ${activeBasket.name} (PKR ${activeBasket.basePrice.toLocaleString()})`,
-        "• Occasion: Celebration Cake Setup",
-        "Please guide me with available customized cake flavors and delivery timing in Thatta/Makli!",
-      ];
-      return encodeURIComponent(lines.join("\n"));
+      return formatSingleProductWhatsAppMessage({
+        name: `Heritage Round Cake Hamper (${activeBasket.name})`,
+        price: activeBasket.basePrice,
+        image: activeBasket.image,
+        categoryTag: "Celebration Cake Setup",
+      });
     }
 
-    const lines = [
-      "Hi Gift Town! I designed a custom gift hamper on your Live Hamper Studio:",
-      `• Basket Base: ${activeBasket.name} (PKR ${activeBasket.basePrice.toLocaleString()})`,
-      `• Packed Items (${totalPackedCount} items):`,
-      ...packedTreats.map((item, idx) => {
-        const qty = quantities[item.id] || 1;
-        const lineTotal = item.price * qty;
-        return `  ${idx + 1}. ${item.name} (x${qty}) - PKR ${lineTotal.toLocaleString()}`;
-      }),
-      `• Total Estimated Price: PKR ${grandTotal.toLocaleString()}`,
-      "Please confirm item availability and delivery timing in Thatta/Makli!",
+    const slipItems = [
+      {
+        id: activeBasket.id,
+        name: `Basket Base: ${activeBasket.name}`,
+        price: activeBasket.basePrice,
+        image: activeBasket.image,
+        quantity: 1,
+      },
+      ...packedTreats.map((t) => ({
+        id: t.id,
+        name: t.name,
+        price: t.price,
+        image: t.image,
+        quantity: quantities[t.id] || 1,
+      })),
     ];
-    return encodeURIComponent(lines.join("\n"));
+
+    return formatMultiItemWhatsAppMessage({
+      title: `Custom Hamper (${activeBasket.name})`,
+      items: slipItems,
+      totalPrice: grandTotal,
+    });
   };
 
   return (
@@ -1079,7 +1092,7 @@ export default function BuildSurpriseSection() {
 
               {/* WhatsApp Checkout CTA */}
               <a
-                href={`https://wa.me/?text=${buildWhatsAppMessage()}`}
+                href={getWhatsAppUrl(buildWhatsAppMessage())}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-full bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white font-body font-bold text-sm uppercase tracking-wider shadow-md hover:shadow-lg transition-all active:scale-98 cursor-pointer group"

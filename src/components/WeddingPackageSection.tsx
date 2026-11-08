@@ -20,6 +20,10 @@ import {
 } from "lucide-react";
 import StickerBadge from "@/components/StickerBadge";
 import { supabase } from "@/lib/supabase";
+import {
+  getWhatsAppUrl,
+  formatMultiItemWhatsAppMessage,
+} from "@/lib/whatsapp";
 
 export interface PackageItem {
   id: string;
@@ -286,15 +290,29 @@ export default function WeddingPackageSection() {
   const finalPrice = isFullSuiteSelected ? pkg.price : calculatedTotal;
 
   // WhatsApp messages
-  const fullPackageWhatsAppMessage = `Hi Gift Town! I want to order the complete "${pkg.title}" (${pkg.category_tag}) for PKR ${pkg.price.toLocaleString()}. Please confirm availability.`;
+  const fullPackageWhatsAppMessage = formatMultiItemWhatsAppMessage({
+    title: `Complete "${pkg.title}" (${pkg.category_tag})`,
+    items: pkg.items.map((it) => ({
+      id: it.id,
+      name: it.name,
+      price: it.price,
+      image: it.image,
+    })),
+    totalPrice: pkg.price,
+  });
 
   const customSetWhatsAppMessage = isFullSuiteSelected
     ? fullPackageWhatsAppMessage
-    : `Hi Gift Town! I want to order a custom tailored package from "${pkg.title}":\n\nSelected Items (${selectedItems.length}):\n` +
-      selectedItems
-        .map((it, idx) => `${idx + 1}. ${it.name} - PKR ${it.price.toLocaleString()}`)
-        .join("\n") +
-      `\n\nTotal Custom Amount: PKR ${finalPrice.toLocaleString()}.\nPlease confirm availability and delivery details!`;
+    : formatMultiItemWhatsAppMessage({
+        title: `Custom Tailored Suite from "${pkg.title}"`,
+        items: selectedItems.map((it) => ({
+          id: it.id,
+          name: it.name,
+          price: it.price,
+          image: it.image,
+        })),
+        totalPrice: finalPrice,
+      });
 
   return (
     <section
@@ -497,7 +515,7 @@ export default function WeddingPackageSection() {
                 {/* Order Suite Button */}
                 <div className="space-y-3 pt-2">
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(fullPackageWhatsAppMessage)}`}
+                    href={getWhatsAppUrl(fullPackageWhatsAppMessage)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white py-4 px-6 rounded-full font-body font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] active:scale-95"
@@ -681,7 +699,7 @@ export default function WeddingPackageSection() {
 
               <div className="w-full sm:w-auto flex items-center gap-3">
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(customSetWhatsAppMessage)}`}
+                  href={getWhatsAppUrl(customSetWhatsAppMessage)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body font-bold text-xs sm:text-sm uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95 ${

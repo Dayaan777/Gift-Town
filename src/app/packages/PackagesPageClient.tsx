@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Navbar from "@/components/Navbar";
 import StickerBadge from "@/components/StickerBadge";
 import { Heart, MessageCircle } from "lucide-react";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 const PackagesShowcase = dynamic(
   () => import("@/components/PackagesShowcase"),
@@ -64,7 +65,7 @@ export default function PackagesPageClient() {
 
               <div className="pt-2">
                 <a
-                  href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20want%20to%20discuss%20a%20custom%20wedding/event%20package."
+                  href={getWhatsAppUrl("Hi Gift Town! I want to discuss a custom wedding/event package.")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform hover:scale-105 active:scale-95"

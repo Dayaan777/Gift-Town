@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Star,
 } from "lucide-react";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -74,7 +75,7 @@ export default function Navbar() {
           {/* Quick WhatsApp link on right */}
           <div className="hidden lg:flex items-center gap-1.5 absolute right-4 top-1/2 -translate-y-1/2 bg-[#fbe4e2]/90 backdrop-blur-xs pl-3 py-0.5 text-xs font-bold text-[#1e7e34]">
             <a
-              href="https://wa.me/?text=Hello%20Gift%20Town!%20I%20would%20like%20to%20inquire%20about%20a%20gift%20package."
+              href={getWhatsAppUrl("Hello Gift Town! I would like to inquire about a gift package.")}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 hover:underline"
@@ -224,7 +225,7 @@ export default function Navbar() {
                         <span>Fresh flowers, chocolates &amp; custom ribbons</span>
                       </span>
                       <a
-                        href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20want%20to%20ask%20about%20gift%20customization."
+                        href={getWhatsAppUrl("Hi Gift Town! I want to ask about gift customization.")}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-bold text-rose hover:underline"
@@ -400,7 +401,7 @@ export default function Navbar() {
                 <span>Create your Own Order</span>
               </Link>
               <a
-                href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20want%20to%20plan%20a%20surprise."
+                href={getWhatsAppUrl("Hi Gift Town! I want to plan a surprise.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2 bg-white border border-[#f5d5db] text-[#1e7e34] py-2 rounded-full font-semibold text-xs shadow-2xs"

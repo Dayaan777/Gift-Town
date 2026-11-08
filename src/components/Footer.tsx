@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import StickerBadge from "@/components/StickerBadge";
 import { Sparkles, MessageCircle, MapPin, Phone } from "lucide-react";
+import { getWhatsAppUrl, WHATSAPP_DISPLAY_NUMBER } from "@/lib/whatsapp";
 
 // Inline Instagram Icon for authentic branding
 function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -76,14 +77,15 @@ export default function Footer() {
                 <InstagramIcon className="w-4 h-4 transition-transform group-hover:scale-110" />
               </a>
               <a
-                href="https://wa.me/"
+                href={getWhatsAppUrl("Hi Gift Town! I want to inquire about a gift order.")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white border border-[#f5d5db] flex items-center justify-center text-[#1e7e34] hover:bg-[#1e7e34] hover:text-white hover:border-[#1e7e34] transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 group"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#f5d5db] text-[#1e7e34] hover:bg-[#1e7e34] hover:text-white hover:border-[#1e7e34] transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 group text-xs font-semibold"
                 aria-label="WhatsApp"
                 title="WhatsApp"
               >
                 <MessageCircle className="w-4 h-4 transition-transform group-hover:scale-110" />
+                <span>{WHATSAPP_DISPLAY_NUMBER}</span>
               </a>
             </div>
           </div>

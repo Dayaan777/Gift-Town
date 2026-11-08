@@ -18,6 +18,7 @@ import {
 import StickerBadge from "@/components/StickerBadge";
 import QuickViewMediaGallery, { MediaItem } from "@/components/QuickViewMediaGallery";
 import { supabase } from "@/lib/supabase";
+import { getWhatsAppUrl, formatSingleProductWhatsAppMessage } from "@/lib/whatsapp";
 
 export interface CatalogProduct {
   id: string;
@@ -544,7 +545,14 @@ export default function FeaturedProductsSection() {
             {/* Sticky Action Footer */}
             <div className="pt-3 border-t border-rose/15 flex-shrink-0">
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(previewItem.whatsappMessage)}`}
+                href={getWhatsAppUrl(
+                  formatSingleProductWhatsAppMessage({
+                    name: previewItem.name,
+                    price: previewItem.price,
+                    image: previewItem.image,
+                    categoryTag: previewItem.categoryTag,
+                  })
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95"
@@ -693,7 +701,14 @@ function ProductCard({
           </div>
 
           <a
-            href={`https://wa.me/?text=${encodeURIComponent(product.whatsappMessage)}`}
+            href={getWhatsAppUrl(
+              formatSingleProductWhatsAppMessage({
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                categoryTag: product.categoryTag,
+              })
+            )}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

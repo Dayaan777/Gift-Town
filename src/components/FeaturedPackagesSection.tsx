@@ -18,6 +18,7 @@ import {
 import StickerBadge from "@/components/StickerBadge";
 import QuickViewMediaGallery, { MediaItem } from "@/components/QuickViewMediaGallery";
 import { supabase } from "@/lib/supabase";
+import { getWhatsAppUrl, formatSingleProductWhatsAppMessage } from "@/lib/whatsapp";
 
 export interface BestsellerProduct {
   id: string;
@@ -205,7 +206,12 @@ export default function FeaturedPackagesSection() {
             media_gallery: Array.isArray(d.media_gallery) ? d.media_gallery : [],
             whatsappMessage:
               d.whatsapp_message ||
-              `Hi Gift Town! I want to order the '${d.name}'.`,
+              formatSingleProductWhatsAppMessage({
+                name: d.name,
+                price: d.price,
+                image: d.image,
+                categoryTag: d.category_tag,
+              }),
             image_scale: Number(d.image_scale) || 100,
             image_position: d.image_position || "center",
             image_offset_y: Number(d.image_offset_y) || 0,
@@ -602,7 +608,14 @@ export default function FeaturedPackagesSection() {
             {/* Sticky Action Footer */}
             <div className="pt-3 border-t border-rose/15 flex-shrink-0">
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(previewItem.whatsappMessage)}`}
+                href={getWhatsAppUrl(
+                  formatSingleProductWhatsAppMessage({
+                    name: previewItem.name,
+                    price: previewItem.price,
+                    image: previewItem.image,
+                    categoryTag: previewItem.categoryTag,
+                  })
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95"
@@ -765,7 +778,14 @@ function CleanBoutiqueCard({
 
           {/* WhatsApp Direct Order Button */}
           <a
-            href={`https://wa.me/?text=${encodeURIComponent(product.whatsappMessage)}`}
+            href={getWhatsAppUrl(
+              formatSingleProductWhatsAppMessage({
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                categoryTag: product.categoryTag,
+              })
+            )}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import StickerBadge from "@/components/StickerBadge";
 import { supabase } from "@/lib/supabase";
+import {
+  getWhatsAppUrl,
+  formatMultiItemWhatsAppMessage,
+} from "@/lib/whatsapp";
 
 export interface PackageItem {
   id: string;
@@ -427,7 +431,16 @@ export default function PackagesShowcase() {
     galleryTouchStartY.current = null;
   };
 
-  const whatsappMessage = `Hi Gift Town! I want to order the complete "${currentPkg.title}" (${currentPkg.category_tag}) for PKR ${currentPkg.price.toLocaleString()}. Please confirm availability!`;
+  const whatsappMessage = formatMultiItemWhatsAppMessage({
+    title: `Complete "${currentPkg.title}" (${currentPkg.category_tag})`,
+    items: currentPkg.items.map((it) => ({
+      id: it.id,
+      name: it.name,
+      price: it.price,
+      image: it.image,
+    })),
+    totalPrice: currentPkg.price,
+  });
 
   return (
     <section id="packages-showcase" className="relative pb-16 sm:pb-24 bg-[#fce3e0] z-10">
@@ -638,7 +651,7 @@ export default function PackagesShowcase() {
               {/* Order Suite Button */}
               <div className="space-y-3 pt-2">
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`}
+                  href={getWhatsAppUrl(whatsappMessage)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white py-4 px-6 rounded-full font-body font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] active:scale-95"

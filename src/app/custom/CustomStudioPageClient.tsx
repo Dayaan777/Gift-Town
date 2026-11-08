@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Navbar from "@/components/Navbar";
 import StickerBadge from "@/components/StickerBadge";
 import { ShoppingBag, Gift, Clock, MessageCircle, SlidersHorizontal } from "lucide-react";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 const CustomStudioSection = dynamic(
   () => import("@/components/CustomStudioSection"),
@@ -98,7 +99,7 @@ export default function CustomPage() {
             {/* Direct WhatsApp Callout */}
             <div className="mt-10 text-center">
               <a
-                href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20have%20a%20special%20custom%20gift%20basket%20idea."
+                href={getWhatsAppUrl("Hi Gift Town! I have a special custom gift basket idea.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform hover:scale-105 active:scale-95"

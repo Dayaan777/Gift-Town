@@ -19,6 +19,7 @@ import {
   Truck,
   Sparkles,
 } from "lucide-react";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 // Inline Instagram Icon for 100% authentic branding
 function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -280,7 +281,7 @@ export default function GallerySection() {
                           Follow
                         </a>
                         <a
-                          href="https://wa.me/?text=Hi%20Gift%20Town!%20I%20saw%20your%20Instagram%20profile%20and%20wanted%20to%20inquire."
+                          href={getWhatsAppUrl("Hi Gift Town! I saw your Instagram profile and wanted to inquire.")}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-4 py-1.5 rounded-full bg-rose/10 text-maroon text-xs font-bold uppercase tracking-wider hover:bg-rose/15 transition-all"
