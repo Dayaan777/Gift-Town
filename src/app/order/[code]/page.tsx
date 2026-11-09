@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   MessageCircle,
   Receipt,
-  Sparkles,
   Calendar,
   AlertCircle,
 } from "lucide-react";
@@ -165,10 +164,12 @@ function OrderCodeContent() {
               Custom Gifting &amp; Surprises Pakistan
             </p>
 
-            <div className="mt-4 inline-flex items-center gap-2 bg-[#fdf5f6] px-4 py-1.5 rounded-full border border-rose/15">
-              <Sparkles className="w-3.5 h-3.5 text-rose" />
+            <div className="mt-4 inline-flex items-center bg-[#fdf5f6] px-4 py-1.5 rounded-full border border-rose/15">
               <span className="font-serif font-bold text-sm text-maroon">
-                {slip.title}
+                {(slip.title || "")
+                  .replace(/custom hamper selection/gi, "Custom Order")
+                  .replace(/hamper selection/gi, "Custom Order")
+                  .replace(/hamper/gi, "Order") || "Custom Order"}
               </span>
             </div>
 

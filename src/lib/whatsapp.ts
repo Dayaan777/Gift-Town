@@ -137,7 +137,7 @@ export async function formatMultiItemOrder(params: {
   totalPrice?: number;
   notes?: string;
 }): Promise<string> {
-  const { title = "Custom Tailored Package", items, totalPrice, notes } = params;
+  const { title = "Custom Order", items, totalPrice, notes } = params;
   const calculatedTotal =
     totalPrice ??
     items.reduce((sum, it) => sum + (it.price || 0) * (it.quantity || 1), 0);
@@ -149,7 +149,7 @@ export async function formatMultiItemOrder(params: {
     notes,
   });
 
-  let text = `Hi Gift Town! 🎁 I want to order a ${title}:\n\n`;
+  let text = `Hi Gift Town! 🎁 I want to place a ${title}:\n\n`;
   text += `📋 *Selected Items (${items.length} items)*:\n`;
 
   // Include up to 4 items summary in chat text, rest viewable on slip

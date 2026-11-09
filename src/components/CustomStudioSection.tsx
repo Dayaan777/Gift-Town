@@ -619,7 +619,7 @@ export default function CustomStudioSection() {
                 type="button"
                 onClick={async () => {
                   const msg = await formatMultiItemOrder({
-                    title: "Custom Hamper Selection",
+                    title: "Custom Order",
                     items: selectedItems.map((it) => ({
                       id: it.id,
                       name: it.name,
