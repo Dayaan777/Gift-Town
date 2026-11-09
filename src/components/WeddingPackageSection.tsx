@@ -22,7 +22,7 @@ import StickerBadge from "@/components/StickerBadge";
 import { supabase } from "@/lib/supabase";
 import {
   getWhatsAppUrl,
-  formatMultiItemWhatsAppMessage,
+  formatMultiItemOrder,
 } from "@/lib/whatsapp";
 
 export interface PackageItem {
@@ -289,31 +289,6 @@ export default function WeddingPackageSection() {
   const calculatedTotal = selectedItems.reduce((sum, it) => sum + (it.price || 0), 0);
   const finalPrice = isFullSuiteSelected ? pkg.price : calculatedTotal;
 
-  // WhatsApp messages
-  const fullPackageWhatsAppMessage = formatMultiItemWhatsAppMessage({
-    title: `Complete "${pkg.title}" (${pkg.category_tag})`,
-    items: pkg.items.map((it) => ({
-      id: it.id,
-      name: it.name,
-      price: it.price,
-      image: it.image,
-    })),
-    totalPrice: pkg.price,
-  });
-
-  const customSetWhatsAppMessage = isFullSuiteSelected
-    ? fullPackageWhatsAppMessage
-    : formatMultiItemWhatsAppMessage({
-        title: `Custom Tailored Suite from "${pkg.title}"`,
-        items: selectedItems.map((it) => ({
-          id: it.id,
-          name: it.name,
-          price: it.price,
-          image: it.image,
-        })),
-        totalPrice: finalPrice,
-      });
-
   return (
     <section
       id="custom-hamper"
@@ -514,15 +489,26 @@ export default function WeddingPackageSection() {
 
                 {/* Order Suite Button */}
                 <div className="space-y-3 pt-2">
-                  <a
-                    href={getWhatsAppUrl(fullPackageWhatsAppMessage)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white py-4 px-6 rounded-full font-body font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] active:scale-95"
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const msg = await formatMultiItemOrder({
+                        title: `Complete "${pkg.title}" (${pkg.category_tag})`,
+                        items: pkg.items.map((it) => ({
+                          id: it.id,
+                          name: it.name,
+                          price: it.price,
+                          image: it.image,
+                        })),
+                        totalPrice: pkg.price,
+                      });
+                      window.open(getWhatsAppUrl(msg), "_blank");
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white py-4 px-6 rounded-full font-body font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] active:scale-95 cursor-pointer"
                   >
                     <MessageCircle className="w-5 h-5" />
                     <span>Book Complete Suite (PKR {pkg.price.toLocaleString()})</span>
-                  </a>
+                  </button>
 
                   <p className="text-center font-body text-xs text-maroon/60">
                     Need only specific baskets?{" "}
@@ -698,11 +684,25 @@ export default function WeddingPackageSection() {
               </div>
 
               <div className="w-full sm:w-auto flex items-center gap-3">
-                <a
-                  href={getWhatsAppUrl(customSetWhatsAppMessage)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body font-bold text-xs sm:text-sm uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95 ${
+                <button
+                  type="button"
+                  disabled={selectedItems.length === 0}
+                  onClick={async () => {
+                    const msg = await formatMultiItemOrder({
+                      title: isFullSuiteSelected
+                        ? `Complete "${pkg.title}" (${pkg.category_tag})`
+                        : `Custom Tailored Suite from "${pkg.title}"`,
+                      items: selectedItems.map((it) => ({
+                        id: it.id,
+                        name: it.name,
+                        price: it.price,
+                        image: it.image,
+                      })),
+                      totalPrice: finalPrice,
+                    });
+                    window.open(getWhatsAppUrl(msg), "_blank");
+                  }}
+                  className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body font-bold text-xs sm:text-sm uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95 cursor-pointer ${
                     selectedItems.length === 0
                       ? "bg-neutral-200 text-neutral-400 pointer-events-none"
                       : "bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white hover:scale-105"
@@ -715,7 +715,7 @@ export default function WeddingPackageSection() {
                       : `Order Selection (${selectedItems.length})`}
                   </span>
                   <ArrowRight className="w-3.5 h-3.5" />
-                </a>
+                </button>
               </div>
             </div>
 

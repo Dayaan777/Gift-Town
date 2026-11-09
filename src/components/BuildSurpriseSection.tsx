@@ -17,8 +17,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import {
   getWhatsAppUrl,
-  formatMultiItemWhatsAppMessage,
-  formatSingleProductWhatsAppMessage,
+  formatMultiItemOrder,
+  formatSingleProductOrder,
 } from "@/lib/whatsapp";
 
 interface FlyingItem {
@@ -528,41 +528,6 @@ export default function BuildSurpriseSection() {
     : (packedItemIds
         .map((id) => treats.find((t) => t.id === id))
         .filter(Boolean) as TreatItem[]);
-
-  // WhatsApp order builder
-  const buildWhatsAppMessage = () => {
-    if (isCakeBasket) {
-      return formatSingleProductWhatsAppMessage({
-        name: `Heritage Round Cake Hamper (${activeBasket.name})`,
-        price: activeBasket.basePrice,
-        image: activeBasket.image,
-        categoryTag: "Celebration Cake Setup",
-      });
-    }
-
-    const slipItems = [
-      {
-        id: activeBasket.id,
-        name: `Basket Base: ${activeBasket.name}`,
-        price: activeBasket.basePrice,
-        image: activeBasket.image,
-        quantity: 1,
-      },
-      ...packedTreats.map((t) => ({
-        id: t.id,
-        name: t.name,
-        price: t.price,
-        image: t.image,
-        quantity: quantities[t.id] || 1,
-      })),
-    ];
-
-    return formatMultiItemWhatsAppMessage({
-      title: `Custom Hamper (${activeBasket.name})`,
-      items: slipItems,
-      totalPrice: grandTotal,
-    });
-  };
 
   return (
     <section
@@ -1091,10 +1056,42 @@ export default function BuildSurpriseSection() {
               </div>
 
               {/* WhatsApp Checkout CTA */}
-              <a
-                href={getWhatsAppUrl(buildWhatsAppMessage())}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={async () => {
+                  let msg = "";
+                  if (isCakeBasket) {
+                    msg = await formatSingleProductOrder({
+                      name: `Heritage Round Cake Hamper (${activeBasket.name})`,
+                      price: activeBasket.basePrice,
+                      image: activeBasket.image,
+                      categoryTag: "Celebration Cake Setup",
+                    });
+                  } else {
+                    const slipItems = [
+                      {
+                        id: activeBasket.id,
+                        name: `Basket Base: ${activeBasket.name}`,
+                        price: activeBasket.basePrice,
+                        image: activeBasket.image,
+                        quantity: 1,
+                      },
+                      ...packedTreats.map((t) => ({
+                        id: t.id,
+                        name: t.name,
+                        price: t.price,
+                        image: t.image,
+                        quantity: quantities[t.id] || 1,
+                      })),
+                    ];
+                    msg = await formatMultiItemOrder({
+                      title: `Custom Hamper (${activeBasket.name})`,
+                      items: slipItems,
+                      totalPrice: grandTotal,
+                    });
+                  }
+                  window.open(getWhatsAppUrl(msg), "_blank");
+                }}
                 className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-full bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white font-body font-bold text-sm uppercase tracking-wider shadow-md hover:shadow-lg transition-all active:scale-98 cursor-pointer group"
               >
                 <MessageCircle className="w-4 h-4" />
@@ -1102,7 +1099,7 @@ export default function BuildSurpriseSection() {
                   {isCakeBasket ? "Order Cake Hamper on WhatsApp" : "Order This Custom Hamper"}
                 </span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </a>
+              </button>
 
               {/* Reassurance note */}
               <p className="text-[11px] text-maroon/60 text-center mt-3 font-medium flex items-center justify-center gap-1">

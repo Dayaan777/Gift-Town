@@ -6,7 +6,7 @@ import Link from "next/link";
 import StickerBadge from "@/components/StickerBadge";
 import Decor from "./home/Decor";
 import { MessageCircle, Heart, ArrowRight, Sparkles } from "lucide-react";
-import { getWhatsAppUrl, formatSingleProductWhatsAppMessage } from "@/lib/whatsapp";
+import { getWhatsAppUrl, formatSingleProductOrder } from "@/lib/whatsapp";
 
 interface SentimentItem {
   id: string;
@@ -218,21 +218,21 @@ export default function SentimentsSection() {
               <span>View Packages</span>
             </Link>
 
-            <a
-              href={getWhatsAppUrl(
-                formatSingleProductWhatsAppMessage({
+            <button
+              type="button"
+              onClick={async () => {
+                const msg = await formatSingleProductOrder({
                   name: `${activeItem.name} (${activeItem.tagline})`,
                   categoryTag: activeItem.badge,
                   image: activeItem.image,
-                })
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white px-7 py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover:scale-105"
+                });
+                window.open(getWhatsAppUrl(msg), "_blank");
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white px-7 py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover:scale-105 cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               <span>Order on WhatsApp</span>
-            </a>
+            </button>
           </div>
 
         </div>

@@ -22,7 +22,7 @@ import StickerBadge from "@/components/StickerBadge";
 import { supabase } from "@/lib/supabase";
 import {
   getWhatsAppUrl,
-  formatMultiItemWhatsAppMessage,
+  formatMultiItemOrder,
 } from "@/lib/whatsapp";
 
 export interface CustomStudioItem {
@@ -400,21 +400,6 @@ export default function CustomStudioSection() {
     return selectedItems.reduce((sum, it) => sum + it.price, 0);
   }, [selectedItems]);
 
-  // WhatsApp order message with full itemized breakdown and visual order slip
-  const whatsappMessage = useMemo(() => {
-    if (selectedItems.length === 0) return "";
-    return formatMultiItemWhatsAppMessage({
-      title: "Custom Hamper Selection",
-      items: selectedItems.map((it) => ({
-        id: it.id,
-        name: it.name,
-        price: it.price,
-        image: it.image,
-      })),
-      totalPrice: totalAmount,
-    });
-  }, [selectedItems, totalAmount]);
-
   // Filter items
   const filteredItems = useMemo(() => {
     return items
@@ -630,16 +615,27 @@ export default function CustomStudioSection() {
             </div>
 
             <div className="w-full sm:w-auto flex items-center gap-2">
-              <a
-                href={getWhatsAppUrl(whatsappMessage)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body font-bold text-xs sm:text-sm uppercase tracking-wider bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white shadow-md hover:shadow-lg transition-transform hover:scale-105 active:scale-95"
+              <button
+                type="button"
+                onClick={async () => {
+                  const msg = await formatMultiItemOrder({
+                    title: "Custom Hamper Selection",
+                    items: selectedItems.map((it) => ({
+                      id: it.id,
+                      name: it.name,
+                      price: it.price,
+                      image: it.image,
+                    })),
+                    totalPrice: totalAmount,
+                  });
+                  window.open(getWhatsAppUrl(msg), "_blank");
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body font-bold text-xs sm:text-sm uppercase tracking-wider bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white shadow-md hover:shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Order Custom Selection ({selectedItems.length})</span>
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </button>
             </div>
           </div>
         </div>

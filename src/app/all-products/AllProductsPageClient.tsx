@@ -8,7 +8,7 @@ import Navbar from "@/components/Navbar";
 import StickerBadge from "@/components/StickerBadge";
 import QuickViewMediaGallery, { MediaItem } from "@/components/QuickViewMediaGallery";
 import { supabase } from "@/lib/supabase";
-import { getWhatsAppUrl, formatSingleProductWhatsAppMessage } from "@/lib/whatsapp";
+import { getWhatsAppUrl, formatSingleProductOrder } from "@/lib/whatsapp";
 import {
   Search,
   Filter,
@@ -554,24 +554,24 @@ export default function AllProductsPage() {
                           </div>
                         </div>
 
-                        <a
-                          href={getWhatsAppUrl(
-                            formatSingleProductWhatsAppMessage({
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const msg = await formatSingleProductOrder({
                               name: product.name,
                               price: product.price,
                               image: product.image,
                               categoryTag: product.categoryTag,
-                            })
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center justify-center gap-1 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full font-body font-bold text-[10px] sm:text-xs uppercase tracking-wider shadow-xs hover:shadow-md transition-all hover:scale-102 active:scale-95 group/btn"
+                            });
+                            window.open(getWhatsAppUrl(msg), "_blank");
+                          }}
+                          className="inline-flex items-center justify-center gap-1 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] hover:to-[#bd2841] text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full font-body font-bold text-[10px] sm:text-xs uppercase tracking-wider shadow-xs hover:shadow-md transition-all hover:scale-102 active:scale-95 group/btn cursor-pointer"
                         >
                           <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           <span>Order</span>
                           <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover/btn:translate-x-0.5 transition-transform" />
-                        </a>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -668,22 +668,22 @@ export default function AllProductsPage() {
 
             {/* Sticky Order Action Button */}
             <div className="pt-3 border-t border-rose/15 flex-shrink-0">
-              <a
-                href={getWhatsAppUrl(
-                  formatSingleProductWhatsAppMessage({
+              <button
+                type="button"
+                onClick={async () => {
+                  const msg = await formatSingleProductOrder({
                     name: previewItem.name,
                     price: previewItem.price,
                     image: previewItem.image,
                     categoryTag: previewItem.categoryTag,
-                  })
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95"
+                  });
+                  window.open(getWhatsAppUrl(msg), "_blank");
+                }}
+                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose to-[#d43751] hover:from-[#d43751] text-white py-2.5 sm:py-3 rounded-full font-body font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-transform active:scale-95 cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Confirm &amp; Book on WhatsApp</span>
-              </a>
+              </button>
             </div>
           </div>
         </div>,

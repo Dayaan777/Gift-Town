@@ -1,7 +1,8 @@
+import { supabase } from "@/lib/supabase";
+
 /**
  * Central WhatsApp configuration & message formatting helper for Gift Town
  */
-
 export const WHATSAPP_PHONE_NUMBER = "923071327708";
 export const WHATSAPP_DISPLAY_NUMBER = "+92 307 1327708";
 
@@ -17,40 +18,6 @@ export function getWhatsAppUrl(message?: string): string {
   return `${base}?text=${encodeURIComponent(message)}`;
 }
 
-/**
- * Format a single product WhatsApp inquiry/order message with title, price, and direct image preview
- */
-export function formatSingleProductWhatsAppMessage(params: {
-  name: string;
-  price?: string | number;
-  image?: string;
-  categoryTag?: string;
-}): string {
-  const { name, price, image, categoryTag } = params;
-
-  let text = `Hi Gift Town! 🎁 I want to order this product:\n\n`;
-  text += `🛍️ *Product*: ${name.trim()}\n`;
-  if (categoryTag) {
-    text += `🏷️ *Category*: ${categoryTag.trim()}\n`;
-  }
-  if (price) {
-    const formattedPrice =
-      typeof price === "number" ? price.toLocaleString() : price;
-    text += `💰 *Price*: PKR ${formattedPrice}\n`;
-  }
-  if (image) {
-    const fullImageUrl = image.startsWith("http")
-      ? image
-      : `${SITE_BASE_URL}${image.startsWith("/") ? "" : "/"}${image}`;
-    text += `📸 *Photo*: ${fullImageUrl}\n`;
-  }
-  text += `\nPlease confirm availability and delivery details!`;
-  return text;
-}
-
-/**
- * Item structure for multi-product / custom orders
- */
 export interface OrderSlipItem {
   id: string;
   name: string;
@@ -61,78 +28,144 @@ export interface OrderSlipItem {
 }
 
 /**
- * Compress and encode items into a short, safe URL query string for the visual slip
+ * Generate a short, readable random code like GT-8492
  */
-export function encodeOrderItems(items: OrderSlipItem[]): string {
-  try {
-    const minimal = items.map((it) => ({
-      n: it.name,
-      p: it.price,
-      img: it.image || "",
-      q: it.quantity || 1,
-    }));
-    return encodeURIComponent(JSON.stringify(minimal));
-  } catch {
-    return "";
-  }
+export function generateShortCode(): string {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `GT-${num}`;
 }
 
 /**
- * Decode items from the query string on the order view page
+ * Persist an order slip to Supabase so it can be viewed via clean short link /order/GT-XXXX
  */
-export function decodeOrderItems(encoded: string): OrderSlipItem[] {
+export async function createOrderSlip(params: {
+  title: string;
+  items: OrderSlipItem[];
+  totalPrice?: number;
+  notes?: string;
+}): Promise<string> {
+  const { title, items, totalPrice, notes } = params;
+  const shortCode = generateShortCode();
+  const calculatedTotal =
+    totalPrice ??
+    items.reduce((sum, it) => sum + (it.price || 0) * (it.quantity || 1), 0);
+
+  const payload = {
+    code: shortCode,
+    title,
+    total: calculatedTotal,
+    items,
+    notes,
+    createdAt: new Date().toISOString(),
+  };
+
   try {
-    const parsed = JSON.parse(decodeURIComponent(encoded));
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((it: any, idx: number) => ({
-      id: `slip-${idx}`,
-      name: it.n || "Custom Item",
-      price: Number(it.p) || 0,
-      image: it.img || "",
-      quantity: Number(it.q) || 1,
-    }));
-  } catch {
-    return [];
+    const { error } = await supabase.from("hamper_items").insert([
+      {
+        id: `slip-${shortCode}`,
+        name: shortCode,
+        type: "order_slip",
+        category: "order_slip",
+        image: items[0]?.image || "/logo.png",
+        subtitle: JSON.stringify(payload),
+        price: calculatedTotal,
+        is_active: false,
+      },
+    ]);
+
+    if (!error) {
+      return shortCode;
+    }
+  } catch (err) {
+    console.error("Failed to persist order slip:", err);
   }
+
+  // Fallback: return short code even if DB fails
+  return shortCode;
 }
 
 /**
- * Format multi-item / custom order WhatsApp message with itemized bill and single visual order slip link
+ * Format WhatsApp message for a single product with short Order Slip link
  */
-export function formatMultiItemWhatsAppMessage(params: {
+export async function formatSingleProductOrder(params: {
+  name: string;
+  price?: string | number;
+  image?: string;
+  categoryTag?: string;
+}): Promise<string> {
+  const { name, price, image, categoryTag } = params;
+  const numericPrice =
+    typeof price === "number"
+      ? price
+      : Number(String(price || "0").replace(/,/g, "")) || 0;
+
+  const shortCode = await createOrderSlip({
+    title: name,
+    items: [
+      {
+        id: "prod-single",
+        name,
+        price: numericPrice,
+        image: image || "",
+        category: categoryTag,
+      },
+    ],
+    totalPrice: numericPrice,
+  });
+
+  const formattedPrice =
+    typeof price === "number" ? price.toLocaleString() : price || "Custom";
+
+  let text = `Hi Gift Town! 🎁 I want to order this product:\n\n`;
+  text += `🛍️ *Product*: ${name.trim()}\n`;
+  if (categoryTag) {
+    text += `🏷️ *Category*: ${categoryTag.trim()}\n`;
+  }
+  text += `💰 *Price*: PKR ${formattedPrice}\n\n`;
+  text += `🧾 *Order Slip*: ${SITE_BASE_URL}/order/${shortCode}\n\n`;
+  text += `Please confirm availability and delivery details!`;
+
+  return text;
+}
+
+/**
+ * Format WhatsApp message for multi-item / custom orders with short Order Slip link
+ */
+export async function formatMultiItemOrder(params: {
   title?: string;
   items: OrderSlipItem[];
   totalPrice?: number;
   notes?: string;
-}): string {
+}): Promise<string> {
   const { title = "Custom Tailored Package", items, totalPrice, notes } = params;
   const calculatedTotal =
     totalPrice ??
     items.reduce((sum, it) => sum + (it.price || 0) * (it.quantity || 1), 0);
 
-  let text = `Hi Gift Town! 🎁 I want to order a ${title}:\n\n`;
-  text += `📋 *Selected Items (${items.length})*:\n`;
+  const shortCode = await createOrderSlip({
+    title,
+    items,
+    totalPrice: calculatedTotal,
+    notes,
+  });
 
-  items.forEach((it, idx) => {
+  let text = `Hi Gift Town! 🎁 I want to order a ${title}:\n\n`;
+  text += `📋 *Selected Items (${items.length} items)*:\n`;
+
+  // Include up to 4 items summary in chat text, rest viewable on slip
+  items.slice(0, 4).forEach((it, idx) => {
     const qty = it.quantity && it.quantity > 1 ? ` (x${it.quantity})` : "";
     text += `${idx + 1}. ${it.name}${qty} - PKR ${it.price.toLocaleString()}\n`;
   });
 
-  text += `\n💰 *Total Amount*: PKR ${calculatedTotal.toLocaleString()}\n`;
-
-  if (notes) {
-    text += `📝 *Notes*: ${notes}\n`;
+  if (items.length > 4) {
+    text += `... and ${items.length - 4} more items\n`;
   }
 
-  // Generate visual order slip link
-  const encodedQuery = encodeOrderItems(items);
-  if (encodedQuery) {
-    text += `\n🧾 *View Complete Visual Order Slip & Photos*:\n`;
-    text += `${SITE_BASE_URL}/order/view?slip=${encodedQuery}&title=${encodeURIComponent(
-      title
-    )}&total=${calculatedTotal}\n`;
-  }
+  text += `\n💰 *Total Amount*: PKR ${calculatedTotal.toLocaleString()}\n\n`;
+  text += `🧾 *View Complete Visual Order Slip & Photos*:\n`;
+  text += `${SITE_BASE_URL}/order/${shortCode}\n\n`;
+  text += `Please confirm availability and delivery details!`;
 
-  text += `\nPlease confirm availability and delivery details!`;
   return text;
 }
